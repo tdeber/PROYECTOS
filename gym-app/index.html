@@ -211,15 +211,16 @@ s:[['A','Cuerpo completo 1',[...CAM,['Hip thrust',3,'12',75],['Jalón al pecho',
 ['D','Glúteo y cardio',[...CAM,['Abducción con banda',3,'15',30],['Puente de glúteos',3,'15',45],['Extensión en polea',2,'12-15',45],['Elevación de piernas',3,'10',30],['Bicicleta fija',1,'20 min',0]]],
 ['E','Cardio suave y core',[...CAM,['Crunch abdominal',3,'15',30],['Plancha',3,'20 s',45],['Plancha lateral',2,'20 s',30],['Cinta',1,'15 min',0],['Bicicleta fija',1,'10 min',0]]]]};
 const OCT_PLAN={0:'A',1:'B',3:'C',4:'D',5:'E'};
-(function migrate4(){if(S.v>=4)return;
+function migrate4(){if(S.v>=4)return;
  EXS.forEach(x=>{if(!S.ex.find(e=>e.n===x[0]))S.ex.push({id:'e'+uid(),n:x[0],g:x[1],eq:x[2]})});
  const byN=n=>S.ex.find(e=>e.n===n);
  for(const k of ['t','s']){const u=S.u[k],old=new Set(SEEDB[k].filter(b=>b[0].length===1).map(b=>k+b[0]));
-  u.blocks=u.blocks.filter(b=>!old.has(b.id));
+  u.blocks=u.blocks.filter(b=>!old.has(b.id)&&!/^[ts]O[A-E]$/.test(b.id));
   OCT[k].forEach((b,i)=>u.blocks.push({id:k+'O'+b[0],code:b[0],name:b[1],c:BC[i%7],items:b[2].map(it=>({ex:byN(it[0]).id,sets:it[1],reps:it[2],rest:it[3]}))}));
   u.plan={};for(let d=0;d<7;d++)u.plan[d]=OCT_PLAN[d]?[k+'O'+OCT_PLAN[d]]:[]}
  S.v=4;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}
-})();
+}
+migrate4();
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast('No se pudo guardar en este dispositivo')}}
 const U=()=>S.u[S.me],OK=()=>S.me==='t'?'s':'t',O=()=>S.u[OK()];
 const X=id=>S.ex.find(e=>e.id===id)||{id,n:'Ejercicio borrado',g:'',eq:''};
@@ -400,7 +401,7 @@ function vEdit(){
 function sheet(html){return`<div class="scrim" data-a="sclose"></div><div class="sheet" role="dialog"><div class="grab"></div>${html}</div>`}
 function renderSheet(){
  const s=ui.sheet,el=$('#sh');if(!s){el.innerHTML='';return}const u=U();let h='';
- if(s.t==='user')h=`<h2>Perfil</h2><div class="seg">${['t','s'].map(k=>`<button data-a="who" data-k="${k}" class="${S.me===k?'on':''}">${esc(S.u[k].name)}</button>`).join('')}</div><div class="lbl">Nombres</div><div class="row"><input id="nt" value="${esc(S.u.t.name)}" maxlength="12"><input id="ns" value="${esc(S.u.s.name)}" maxlength="12"></div><button class="btn g" data-a="names">Guardar nombres</button><div class="mut xs">Este prototipo guarda todo en este teléfono. En la versión real los datos de los dos se sincronizan.</div><button class="btn bad" data-a="reset">${ui.arm==='reset'?'Tocá de nuevo para restaurar los datos de ejemplo':'Restaurar datos de ejemplo'}</button>`;
+ if(s.t==='user')h=`<h2>Perfil</h2><div class="seg">${['t','s'].map(k=>`<button data-a="who" data-k="${k}" class="${S.me===k?'on':''}">${esc(S.u[k].name)}</button>`).join('')}</div><div class="lbl">Nombres</div><div class="row"><input id="nt" value="${esc(S.u.t.name)}" maxlength="12"><input id="ns" value="${esc(S.u.s.name)}" maxlength="12"></div><button class="btn g" data-a="names">Guardar nombres</button><div class="mut xs">Este prototipo guarda todo en este teléfono. En la versión real los datos de los dos se sincronizan.</div><div class="mut xs">Restablecer vuelve a cargar los bloques y el plan semanal del mes para los dos. No borra tus entrenamientos, peso ni fotos.</div><button class="btn bad" data-a="reset">${ui.arm==='reset'?'Tocá de nuevo para restablecer las rutinas del mes':'Restablecer rutinas del mes'}</button>`;
  if(s.t==='chip'){const b=u.blocks.find(x=>x.id===s.b);h=`<div class="row"><div class="code" style="--c:${b.c}">${esc(b.code)}</div><div class="grow"><h2>${esc(b.name)}</h2><div class="mut xs">${DAYS[s.d]} · ${b.items.length} ejercicios</div></div></div><div class="lbl">Mover a</div><div class="row wr">${D1.map((l,i)=>`<button class="btn g sm" style="min-width:42px" ${i==s.d?'disabled':''} data-a="moveb" data-to="${i}">${l}</button>`).join('')}</div><div class="lbl">También agregar a</div><div class="row wr">${D1.map((l,i)=>`<button class="btn g sm" style="min-width:42px" ${u.plan[i].includes(b.id)?'disabled':''} data-a="alsob" data-to="${i}">${l}</button>`).join('')}</div><button class="btn g" data-a="editb" data-b="${b.id}">Editar bloque</button><button class="btn bad" data-a="rmb">Quitar del ${DAYS[s.d].toLowerCase()}</button>`}
  if(s.t==='addday')h=`<h2>Agregar al ${DAYS[s.d].toLowerCase()}</h2>${u.blocks.map(b=>{const has=u.plan[s.d].includes(b.id);return`<button class="ex" ${has?'disabled':''} data-a="adddayb" data-b="${b.id}"><span class="code" style="--c:${b.c}">${esc(b.code)}</span><div class="grow"><div>${esc(b.name)}</div><div class="mut xs">${b.items.length} ejercicios</div></div>${has?'<span class="mut xs">Ya está</span>':''}</button>`}).join('')}<button class="btn g" data-a="newb">${ic('plus','s')} Crear bloque nuevo</button>`;
  if(s.t==='startpick')h=`<h2>¿Qué entrenás?</h2>${u.blocks.map(b=>`<button class="ex" data-a="stog" data-b="${b.id}"><span class="code" style="--c:${b.c}">${esc(b.code)}</span><div class="grow"><div>${esc(b.name)}</div><div class="mut xs">${b.items.length} ejercicios · ${blockMin(b)} min</div></div><span class="chk ${s.sel.includes(b.id)?'on':''}" style="width:34px;height:34px">${s.sel.includes(b.id)?ic('check','s'):''}</span></button>`).join('')}<button class="btn" data-a="gostart">Empezar (${s.sel.length})</button>`;
@@ -427,7 +428,7 @@ document.addEventListener('click',ev=>{
  case'user':ui.sheet={t:'user'};ui.arm=null;R();break;
  case'who':S.me=d.k;ui.sheet=null;ui.progEx=null;save();R(false);break;
  case'names':S.u.t.name=$('#nt').value.trim()||'Tomi';S.u.s.name=$('#ns').value.trim()||'Sofi';ui.sheet=null;save();R();toast('Nombres guardados');break;
- case'reset':if(ui.arm==='reset'){S=seed();ui.arm=null;ui.sheet=null;ui.progEx=null;save();R(false);toast('Datos de ejemplo restaurados')}else{ui.arm='reset';R()}break;
+ case'reset':if(ui.arm==='reset'){S.v=3;migrate4();ui.arm=null;ui.sheet=null;R(false);toast('Rutinas del mes restablecidas')}else{ui.arm='reset';R()}break;
  case'sclose':ui.sheet=null;R();break;
  case'start':startWork(u.plan[dow(new Date())],S.me);break;
  case'resume':unlockAudio();ui.full='work';R(false);break;
