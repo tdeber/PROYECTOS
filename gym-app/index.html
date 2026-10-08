@@ -153,7 +153,7 @@ const SH1=['Sentadilla con rusa','Bisagra sobre colchoneta','Estocada con mancue
 const SH2=['Posición L en paralelas','Tirón para tríceps en polea','Sentadilla en multi','Agrupado en paralelas, apoyo palmar','Sentadilla 90° con espalda en pelota, sobre sueca','Escalador en paralelas, apoyo palmar','Press militar en banco 90°','Estocada en multi','Plancha alta','Cuádriceps en camilla','Isquiotibial en camilla','Abdominales vela en sueca','Press Arnold','Estocada sin retorno sobre Step','Abdominales sobre pelota, apoyo espalda','Elevación de cadera','Plancha sobre pelota'];
 const hoja=l=>l.map(n=>[n,3,/lancha/.test(n)?'20 s':'15',45]);
 SEEDB.s.push(['H1','Hoja 1 · Tren inferior y core',hoja(SH1)],['H2','Hoja 2 · Tren inferior y core',hoja(SH2)]);
-const FIJOS_ARA=['Patada de glúteo en polea','Aductores'];
+const FIJOS_ARA=[];
 const SEEDP={t:{0:['A','C'],1:['B','D'],3:['E'],4:['F','G']},s:{0:['A'],1:['C'],3:['B'],4:['A','D']}};
 
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -165,7 +165,7 @@ function seed(){
  const R=rng(7);
  const ex=EXS.map((x,i)=>({id:'e'+i,n:x[0],g:x[1],eq:x[2]}));
  const byN=n=>ex.find(e=>e.n===n);
- const S={v:2,me:'t',ex,u:{},draft:null};
+ const S={v:3,me:'t',ex,u:{},draft:null};
  for(const k of ['t','s']){
   const blocks=SEEDB[k].map((b,i)=>({id:k+b[0],code:b[0],name:b[1],c:BC[i%7],items:b[2].map(it=>({ex:byN(it[0]).id,sets:it[1],reps:it[2],rest:it[3]}))}));
   const plan={};for(let d=0;d<7;d++)plan[d]=(SEEDP[k][d]||[]).map(c=>k+c);
@@ -195,6 +195,30 @@ let S;try{S=JSON.parse(localStorage.getItem(LS))}catch(e){S=null}if(!S||!S.u)S=s
  if(ua.name==='Sofi')ua.name='Ara';
  SEEDB.s.filter(b=>b[0]==='H1'||b[0]==='H2').forEach(b=>{const id='s'+b[0];if(!ua.blocks.find(x=>x.id===id))ua.blocks.push({id,code:b[0],name:b[1],c:BC[ua.blocks.length%7],items:b[2].map(it=>({ex:byN(it[0]).id,sets:it[1],reps:it[2],rest:it[3]}))})});
  ua.fixed=FIJOS_ARA.map(n=>byN(n).id);S.u.t.fixed=S.u.t.fixed||[];S.v=2;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}
+})();
+(function migrate3(){if(S.v>=3)return;S.u.s.fixed=[];S.v=3;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}})();
+// Rutinas de octubre 2026. Formato: [código, nombre, [[ejercicio, series, reps, descanso en s], ...]]
+const CAM=[['Cuádriceps en camilla',3,'12',45],['Isquiotibial en camilla',3,'12',45]];
+const OCT={
+t:[['A','Cuerpo completo 1',[['Sentadilla goblet',3,'10-12',90],['Press plano con mancuernas',3,'10-12',90],['Jalón al pecho',3,'10-12',90],['Peso muerto rumano',3,'10',90],['Press de hombros con mancuernas',2,'12',60],['Plancha',3,'30 s',45],['Cinta',1,'12-15 min',0]]],
+['B','Cuerpo completo 2',[['Prensa 45°',3,'12',90],['Remo en máquina',3,'12',75],['Press inclinado con mancuernas',3,'10-12',90],['Curl femoral sentado',3,'12',60],['Elevaciones laterales',2,'15',45],['Crunch en polea',3,'15',45],['Bicicleta fija',1,'12-15 min',0]]],
+['C','Cuerpo completo 3',[['Zancadas',3,'10 c/pierna',75],['Remo con mancuerna',3,'12',75],['Press en máquina',3,'12',75],['Hip thrust',3,'12',75],['Curl con mancuernas',2,'12',45],['Extensión en polea',2,'12-15',45],['Plancha lateral',2,'20 s',30],['Escaladora',1,'12 min',0]]],
+['D','Cardio largo',[['Cinta',1,'25 min',0],['Bicicleta fija',1,'20 min',0],['Plancha',3,'30 s',45]]],
+['E','Cardio mixto',[['Escaladora',1,'20 min',0],['Bicicleta fija',1,'20 min',0],['Bicicleta abdominal',3,'20',30]]]],
+s:[['A','Cuerpo completo 1',[...CAM,['Hip thrust',3,'12',75],['Jalón al pecho',3,'12',75],['Press de hombros con mancuernas',2,'12',60],['Plancha',3,'20 s',45],['Bicicleta fija',1,'12 min',0]]],
+['B','Cuerpo completo 2',[...CAM,['Peso muerto rumano con mancuernas',3,'12',75],['Puente de glúteos',3,'15',45],['Remo en máquina',3,'12',60],['Press plano con mancuernas',2,'12',60],['Elevaciones laterales',2,'15',45],['Bicicleta abdominal',3,'15',30],['Cinta',1,'10 min',0]]],
+['C','Cuerpo completo 3',[...CAM,['Hip thrust',3,'10-12',75],['Abductores',3,'15',45],['Remo con mancuerna',3,'12',60],['Curl con mancuernas',2,'12',45],['Plancha lateral',2,'20 s',30],['Bicicleta fija',1,'12 min',0]]],
+['D','Glúteo y cardio',[...CAM,['Abducción con banda',3,'15',30],['Puente de glúteos',3,'15',45],['Extensión en polea',2,'12-15',45],['Elevación de piernas',3,'10',30],['Bicicleta fija',1,'20 min',0]]],
+['E','Cardio suave y core',[...CAM,['Crunch abdominal',3,'15',30],['Plancha',3,'20 s',45],['Plancha lateral',2,'20 s',30],['Cinta',1,'15 min',0],['Bicicleta fija',1,'10 min',0]]]]};
+const OCT_PLAN={0:'A',1:'B',3:'C',4:'D',5:'E'};
+(function migrate4(){if(S.v>=4)return;
+ EXS.forEach(x=>{if(!S.ex.find(e=>e.n===x[0]))S.ex.push({id:'e'+uid(),n:x[0],g:x[1],eq:x[2]})});
+ const byN=n=>S.ex.find(e=>e.n===n);
+ for(const k of ['t','s']){const u=S.u[k],old=new Set(SEEDB[k].filter(b=>b[0].length===1).map(b=>k+b[0]));
+  u.blocks=u.blocks.filter(b=>!old.has(b.id));
+  OCT[k].forEach((b,i)=>u.blocks.push({id:k+'O'+b[0],code:b[0],name:b[1],c:BC[i%7],items:b[2].map(it=>({ex:byN(it[0]).id,sets:it[1],reps:it[2],rest:it[3]}))}));
+  u.plan={};for(let d=0;d<7;d++)u.plan[d]=OCT_PLAN[d]?[k+'O'+OCT_PLAN[d]]:[]}
+ S.v=4;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}
 })();
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast('No se pudo guardar en este dispositivo')}}
 const U=()=>S.u[S.me],OK=()=>S.me==='t'?'s':'t',O=()=>S.u[OK()];
@@ -309,6 +333,7 @@ function vPar(){
 
 function renderFull(){
  const el=$('#fl');
+ el.className=(ui.full==='work'&&S.draft)||ui.full==='edit'||ui.full==='sum'?'full':'';
  if(ui.full==='work'&&S.draft){el.innerHTML=vWork();tick();return}
  if(ui.full==='edit'){el.innerHTML=vEdit();return}
  if(ui.full==='sum'){el.innerHTML=vSum();return}
