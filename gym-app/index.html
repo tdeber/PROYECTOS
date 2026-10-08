@@ -463,6 +463,8 @@ document.addEventListener('input',ev=>{
  if(a==='q'){ui.q=t.value;const l=$('#exl');if(l)l.innerHTML=exList(ui.sheet&&ui.sheet.t==='pick'?'pick':'lib')}
  else if(a==='wkg'||a==='wreps'){const s=S.draft.entries[+t.dataset.e].sets[+t.dataset.s];const v=parseFloat(t.value.replace(',','.'));s[a==='wkg'?'kg':'reps']=isNaN(v)?0:v;s.auto=false;save()}
  else if(a==='ereps')ui.edit.items[+t.dataset.i].reps=t.value;
+ else if(a==='ename')ui.edit.name=t.value;
+ else if(a==='ecode')ui.edit.code=t.value;
 });
 document.addEventListener('change',ev=>{
  const t=ev.target,a=t.dataset.in;
