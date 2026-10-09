@@ -2,7 +2,7 @@
 
 App web de entrenamiento para grupos chicos (hoy pensada para dos personas). Se instala en el celular como una app (PWA), funciona sin conexión y no tiene servidor: todo corre en el navegador.
 
-> Estado: prototipo en uso. Los datos viven solo en cada dispositivo. Cada persona puede crear su cuenta con email, elegir un nick único, subir una foto y configurar su privacidad. La sincronización de los entrenos y los grupos todavía no están activos (ver [Hoja de ruta](#hoja-de-ruta)).
+> Estado: en uso. Cada persona tiene su cuenta y sus datos se guardan en su celular y en la nube. Se pueden armar grupos por invitación para ver los entrenos de otras personas, según lo que cada una decida compartir.
 
 ## Qué hace
 
@@ -27,10 +27,19 @@ Cuando se publica una versión nueva, hay que cerrar la app por completo y volve
 
 ## Dónde se guardan los datos
 
-- Todo se guarda en el `localStorage` del navegador de cada dispositivo (clave `gymapp_proto_v1`). Los datos de entrenamiento no se envían a ningún servidor. Lo único que se guarda en Supabase hoy es el perfil: email, nick, nombre, foto de perfil (reducida) y ajustes de privacidad.
-- **No se guarda ningún dato personal en este repositorio:** ni nombres, ni rutinas, ni entrenamientos, ni información de salud. El código solo trae el catálogo genérico de ejercicios.
-- La app no usa analíticas ni cookies. Las tipografías están en `fonts/` y la librería de Supabase en `vendor/`, así que no se piden a ninguna CDN. El único servicio externo es el proyecto de Supabase propio, y solo cuando se inicia sesión.
-- Desde un dispositivo nuevo la app siempre aparece vacía.
+- **En el celular:** todo se guarda en el `localStorage` del navegador (clave `gymapp_proto_v1`), así la app funciona sin conexión.
+- **En la nube (Supabase):** si la persona crea una cuenta, sus bloques, plan, entrenos y peso se envían solos cuando hay internet (tabla `datos`), junto con su perfil: nick, nombre, foto reducida y ajustes de privacidad (tabla `perfiles`). Las fotos de progreso todavía quedan solo en el celular.
+- **Nunca en GitHub:** este repositorio es público y no contiene datos personales. Solo trae el catálogo genérico de ejercicios, el código y la dirección y clave pública del proyecto de Supabase.
+- **Privacidad entre personas:** cada persona elige qué ven los demás (entrenos, estadísticas, plan, bloques en detalle, peso, fotos). Lo decide la base de datos, no la pantalla: un miembro de un grupo nunca recibe lo que no se habilitó.
+- **Al cerrar sesión** se borran los datos de ese celular (quedan guardados en la cuenta), para que nadie más los vea en un celular compartido.
+- La app no usa analíticas ni cookies. Las tipografías están en `fonts/` y la librería de Supabase en `vendor/`, así que no se piden a ninguna CDN. Una política de seguridad de contenido limita las conexiones al proyecto de Supabase.
+
+## Cómo funcionan las cuentas y los grupos
+
+- **Una cuenta por persona**, con email y clave de 8 caracteres o más, y un **nick único** (se puede cambiar mientras esté libre).
+- **Grupos con nombre.** Solo quien crea el grupo invita, escribiendo el nick exacto de la otra persona, puede cambiarle el nombre, sacar miembros y eliminarlo. La invitación se puede aceptar, rechazar o cancelar. Una persona puede estar en varios grupos (hasta 20 personas por grupo, 10 grupos creados por persona).
+- **Si no se invita a nadie**, la app se ve y funciona igual que sin cuenta.
+- En la pestaña **Grupos** se ve el resumen (quién entrenó hoy, la semana, el calendario y los récords) y el perfil de cada miembro con sus estadísticas, plan y bloques, y se pueden copiar sus bloques.
 
 ## Estructura
 
@@ -42,7 +51,9 @@ Cuando se publica una versión nueva, hay que cerrar la app por completo y volve
 | `icons/` | Íconos de la app. |
 | `config.js` | Dirección del proyecto de Supabase y clave pública (publishable). Es seguro que esté en el repositorio: los datos los protegen las reglas de la base. Nunca poner acá una clave secreta ni `service_role`. |
 | `vendor/supabase.js` | Librería `@supabase/supabase-js` 2.45.4 (licencia MIT) incluida en el repositorio. |
-| `supabase/` | Scripts SQL que se pegan en orden en el SQL Editor de Supabase: tablas y reglas de seguridad. `01-perfiles.sql` crea los perfiles. |
+| `supabase/` | Scripts SQL que se pegan en orden en el SQL Editor de Supabase: `01-perfiles.sql` (cuenta, nick, foto, privacidad) y `02-datos-y-grupos.sql` (datos por cuenta, grupos, invitaciones y la función que filtra lo que ve cada miembro). |
+| `tests/` | Pruebas automáticas. `QA.md` es el informe de la última corrida. |
+| `QA.md` | Informe de pruebas: qué se verificó, resultados y qué hay que probar a mano. |
 | `fonts/` | Tipografías Barlow y Barlow Condensed (licencia SIL OFL 1.1, ver `fonts/LICENSE-OFL.txt`). |
 
 ## Desarrollo
@@ -55,29 +66,33 @@ python3 -m http.server 8000 -d gym-app
 
 Y abrir `http://localhost:8000`. Los datos guardados tienen una versión (`S.v`) y se actualizan con migraciones al abrir la app. Al cambiar la forma de los datos hay que agregar una migración nueva.
 
-## Cómo va a funcionar (decidido)
+## Puesta en marcha en Supabase
 
-- **Una cuenta por persona**, cada una con su email y un **nick único** (se puede cambiar mientras esté libre).
-- **Grupos por invitación:** quien crea un grupo es el único que invita, escribiendo el nick exacto. Se puede aceptar, rechazar o cancelar. Una persona puede estar en varios grupos y un grupo puede tener varias personas.
-- **Si no se invita a nadie, la app se ve normal**, con los datos propios.
-- **Privacidad global** por persona: seis interruptores (entrenos, estadísticas, plan, bloques en detalle, peso, fotos). Cada grupo ve solo lo habilitado. En la etapa de grupos esto lo aplica la base de datos, no solo la pantalla.
+1. Crear un proyecto en Supabase y copiar la dirección y la clave *publishable* en `config.js`. No usar nunca la clave secreta ni `service_role`.
+2. En **SQL Editor**, pegar y ejecutar en orden `supabase/01-perfiles.sql` y `supabase/02-datos-y-grupos.sql`.
+3. En **Authentication → Providers → Email**: dejar el proveedor prendido, mínimo de clave de 8, y la confirmación de email apagada hasta tener envío de correos propio.
+4. En **Authentication → URL Configuration**: poner la dirección de la app como Site URL y en Redirect URLs (para "Olvidé mi clave").
+5. Cuando las personas ya tengan su cuenta, apagar **Allow new users to sign up**.
 
 ## Hoja de ruta
 
-Hecho:
+Hecho: cuentas con nick único y perfil con foto, privacidad, sincronización de datos, grupos con invitaciones, vista de grupo y de cada persona, recuperar clave, política de seguridad y pruebas automáticas.
 
-- **Etapa 1, perfiles:** cuenta con email y clave, nick único, nombre, foto de perfil y privacidad guardados en la tabla `perfiles`.
+Pendiente:
 
-Pendiente, en este orden:
-
-1. **Etapa 2, mis datos:** guardar y recuperar en Supabase los bloques, el plan, los entrenos, el peso y los ejercicios propios, con el celular como copia principal y envío automático cuando hay internet. Los datos viven en la cuenta de Supabase del proyecto y nunca en GitHub.
-2. **Etapa 3, grupos:** crear grupos con nombre, invitar por nick, aceptar, rechazar, cancelar y sacar miembros. Pestaña Grupos con resumen, calendario, récords y el perfil de cada persona con sus estadísticas.
-3. **Fotos de progreso** en el almacenamiento privado de Supabase.
-4. **Recuperar la clave** por email y confirmación de email.
-5. **App nativa** que reutilice esos mismos datos.
-6. Un botón para borrar todos los datos del servidor, además del botón actual que borra los del dispositivo.
+1. **Fotos de progreso** en el almacenamiento privado de Supabase, y compartirlas según la privacidad.
+2. **Envío de correos propio** (por ejemplo con un dominio propio y un servicio SMTP) para confirmar emails y que llegue "Olvidé mi clave" a cualquier persona.
+3. **Notas por ejercicio, sugerencia de peso y calentamientos.**
+4. **App nativa** que reutilice los mismos datos.
+5. Un botón para borrar la cuenta y todos sus datos del servidor.
 
 ## Historial de cambios
+
+### 2026-10-10
+- Etapas 2 y 3: los datos de cada persona se sincronizan con su cuenta y se pueden armar grupos por invitación con nick, con vista de grupo y de cada miembro.
+- La privacidad la aplica la base de datos. Cada persona elige qué comparte.
+- Informe de pruebas (`QA.md`) con 116 pruebas automáticas y pruebas de mutación.
+- Se saca el perfil local de "pareja": ahora la pareja es un grupo.
 
 ### 2026-10-09
 - Etapa 1 de Supabase: cuenta con email y clave, nick único, nombre, foto de perfil y privacidad. Librería incluida en `vendor/`. Todavía no sincroniza entrenos.

@@ -1,0 +1,352 @@
+{
+ "suite": "app",
+ "fecha": "2026-10-09T23:35:53.579Z",
+ "total": 49,
+ "ok": 49,
+ "fallas": 0,
+ "pruebas": [
+  {
+   "id": "AP-01",
+   "seccion": "Registro y perfil",
+   "desc": "La app arranca pidiendo el nombre (una sola persona)",
+   "ok": true,
+   "ms": 22
+  },
+  {
+   "id": "AP-02",
+   "seccion": "Registro y perfil",
+   "desc": "Formulario de cuenta en el perfil; clave corta y cuenta inexistente avisan",
+   "ok": true,
+   "ms": 143
+  },
+  {
+   "id": "AP-03",
+   "seccion": "Registro y perfil",
+   "desc": "Registrarse lleva a elegir nick y nombre; valida el nick en vivo contra la base",
+   "ok": true,
+   "ms": 557
+  },
+  {
+   "id": "AP-04",
+   "seccion": "Registro y perfil",
+   "desc": "Nick tomado (sin importar mayusculas) se avisa y no crea el perfil",
+   "ok": true,
+   "ms": 1217
+  },
+  {
+   "id": "AP-05",
+   "seccion": "Registro y perfil",
+   "desc": "El perfil muestra nick y nombre; se pueden cambiar; el nick viejo queda libre",
+   "ok": true,
+   "ms": 939
+  },
+  {
+   "id": "AP-06",
+   "seccion": "Registro y perfil",
+   "desc": "Los 6 interruptores de privacidad se guardan en la nube y los atajos funcionan",
+   "ok": true,
+   "ms": 59
+  },
+  {
+   "id": "AP-07",
+   "seccion": "Registro y perfil",
+   "desc": "Recuperar clave: pide el mail, abre la pantalla de clave nueva y exige 8 caracteres",
+   "ok": true,
+   "ms": 480
+  },
+  {
+   "id": "AP-08",
+   "seccion": "Registro y perfil",
+   "desc": "Al confirmar el email, la persona entra sola",
+   "ok": true,
+   "ms": 259
+  },
+  {
+   "id": "AP-20",
+   "seccion": "Sincronizacion de datos",
+   "desc": "Al crear la cuenta se suben los datos que ya habia en el celular",
+   "ok": true,
+   "ms": 3
+  },
+  {
+   "id": "AP-21",
+   "seccion": "Sincronizacion de datos",
+   "desc": "El indicador de estado queda en \"sincronizado\"",
+   "ok": true,
+   "ms": 0
+  },
+  {
+   "id": "AP-22",
+   "seccion": "Sincronizacion de datos",
+   "desc": "Un celular nuevo, al entrar con la cuenta, recupera todo",
+   "ok": true,
+   "ms": 272
+  },
+  {
+   "id": "AP-23",
+   "seccion": "Sincronizacion de datos",
+   "desc": "Un cambio se envia solo, sin tocar nada (espera de 1,5 s)",
+   "ok": true,
+   "ms": 1534
+  },
+  {
+   "id": "AP-24",
+   "seccion": "Sincronizacion de datos",
+   "desc": "Un cambio hecho en otro celular llega al volver a abrir la app",
+   "ok": true,
+   "ms": 58
+  },
+  {
+   "id": "AP-25",
+   "seccion": "Sincronizacion de datos",
+   "desc": "Si cambian los dos lados, se unen sin perder nada",
+   "ok": true,
+   "ms": 66
+  },
+  {
+   "id": "AP-26",
+   "seccion": "Sincronizacion de datos",
+   "desc": "Sin internet la app sigue guardando y no dice \"sincronizado\"; al volver se envia",
+   "ok": true,
+   "ms": 60
+  },
+  {
+   "id": "AP-27",
+   "seccion": "Sincronizacion de datos",
+   "desc": "Un entrenamiento terminado se sube a la nube",
+   "ok": true,
+   "ms": 1579
+  },
+  {
+   "id": "AP-28",
+   "seccion": "Sincronizacion de datos",
+   "desc": "Ids de ejercicios en conflicto no se mezclan: se remapean por nombre",
+   "ok": true,
+   "ms": 216
+  },
+  {
+   "id": "AP-29",
+   "seccion": "Sincronizacion de datos",
+   "desc": "Cerrar sesion borra los datos del celular y otra cuenta no los ve",
+   "ok": true,
+   "ms": 352
+  },
+  {
+   "id": "AP-30",
+   "seccion": "Sincronizacion de datos",
+   "desc": "Si hay cambios sin enviar, cerrar sesion pide confirmar antes de borrar",
+   "ok": true,
+   "ms": 376
+  },
+  {
+   "id": "AP-31",
+   "seccion": "Sincronizacion de datos",
+   "desc": "Otra persona que entra en un celular con datos de alguien mas empieza de cero",
+   "ok": true,
+   "ms": 277
+  },
+  {
+   "id": "AP-32",
+   "seccion": "Sincronizacion de datos",
+   "desc": "\"Limpiar todo\" tambien borra la nube y los datos no reaparecen",
+   "ok": true,
+   "ms": 315
+  },
+  {
+   "id": "AP-40",
+   "seccion": "Grupos e invitaciones",
+   "desc": "Sin grupos, la pestaña Grupos explica que hacer y la app funciona normal",
+   "ok": true,
+   "ms": 221
+  },
+  {
+   "id": "AP-41",
+   "seccion": "Grupos e invitaciones",
+   "desc": "Crear un grupo con nombre: queda en la lista y se abre en Ajustes",
+   "ok": true,
+   "ms": 85
+  },
+  {
+   "id": "AP-42",
+   "seccion": "Grupos e invitaciones",
+   "desc": "Invitar: nick inexistente, a uno mismo y en blanco muestran el aviso correcto",
+   "ok": true,
+   "ms": 80
+  },
+  {
+   "id": "AP-43",
+   "seccion": "Grupos e invitaciones",
+   "desc": "Invitar por nick (con @ y mayusculas) envia la invitacion",
+   "ok": true,
+   "ms": 80
+  },
+  {
+   "id": "AP-44",
+   "seccion": "Grupos e invitaciones",
+   "desc": "Quien recibe la invitacion ve el aviso en Hoy y el punto rojo en la pestaña Grupos",
+   "ok": true,
+   "ms": 36
+  },
+  {
+   "id": "AP-45",
+   "seccion": "Grupos e invitaciones",
+   "desc": "La invitacion muestra grupo y quien invita; rechazar y volver a invitar funciona",
+   "ok": true,
+   "ms": 83
+  },
+  {
+   "id": "AP-46",
+   "seccion": "Grupos e invitaciones",
+   "desc": "El creador puede cancelar una invitacion pendiente",
+   "ok": true,
+   "ms": 78
+  },
+  {
+   "id": "AP-47",
+   "seccion": "Grupos e invitaciones",
+   "desc": "Aceptar la invitacion: Beto entra al grupo",
+   "ok": true,
+   "ms": 66
+  },
+  {
+   "id": "AP-48",
+   "seccion": "Grupos e invitaciones",
+   "desc": "Quien no creo el grupo no ve el formulario de invitar y puede salir",
+   "ok": true,
+   "ms": 56
+  },
+  {
+   "id": "AP-49",
+   "seccion": "Grupos e invitaciones",
+   "desc": "Resumen del grupo: ambos aparecen con su estado de hoy",
+   "ok": true,
+   "ms": 51
+  },
+  {
+   "id": "AP-50",
+   "seccion": "Privacidad entre personas",
+   "desc": "Con todo apagado se ve a Beto pero nada de sus datos (todo marcado como privado)",
+   "ok": true,
+   "ms": 510
+  },
+  {
+   "id": "AP-51",
+   "seccion": "Privacidad entre personas",
+   "desc": "Solo \"entrenos\": se ve que entreno pero no kilos ni plan",
+   "ok": true,
+   "ms": 259
+  },
+  {
+   "id": "AP-52",
+   "seccion": "Privacidad entre personas",
+   "desc": "Con \"estadisticas\": se ven graficos, racha y records de Beto",
+   "ok": true,
+   "ms": 218
+  },
+  {
+   "id": "AP-53",
+   "seccion": "Privacidad entre personas",
+   "desc": "Con \"plan\" se ven los dias y los nombres de bloques, pero no los ejercicios",
+   "ok": true,
+   "ms": 233
+  },
+  {
+   "id": "AP-54",
+   "seccion": "Privacidad entre personas",
+   "desc": "Con \"bloques en detalle\" se ven los ejercicios y se puede copiar un bloque",
+   "ok": true,
+   "ms": 225
+  },
+  {
+   "id": "AP-55",
+   "seccion": "Privacidad entre personas",
+   "desc": "Con \"peso\" se ve el peso corporal",
+   "ok": true,
+   "ms": 226
+  },
+  {
+   "id": "AP-56",
+   "seccion": "Privacidad entre personas",
+   "desc": "Cada uno se ve completo a si mismo en el grupo, aun con todo privado",
+   "ok": true,
+   "ms": 368
+  },
+  {
+   "id": "AP-57",
+   "seccion": "Privacidad entre personas",
+   "desc": "El calendario del grupo marca los dias y el detalle muestra solo lo permitido",
+   "ok": true,
+   "ms": 103
+  },
+  {
+   "id": "AP-60",
+   "seccion": "Administracion del grupo",
+   "desc": "El creador saca a un miembro (con confirmacion) y el miembro pierde el acceso",
+   "ok": true,
+   "ms": 72
+  },
+  {
+   "id": "AP-61",
+   "seccion": "Administracion del grupo",
+   "desc": "Renombrar el grupo",
+   "ok": true,
+   "ms": 34
+  },
+  {
+   "id": "AP-62",
+   "seccion": "Administracion del grupo",
+   "desc": "Un miembro puede salir del grupo (con confirmacion)",
+   "ok": true,
+   "ms": 142
+  },
+  {
+   "id": "AP-63",
+   "seccion": "Administracion del grupo",
+   "desc": "El creador elimina el grupo (con confirmacion) y desaparece para todos",
+   "ok": true,
+   "ms": 48
+  },
+  {
+   "id": "AP-70",
+   "seccion": "Seguridad de la interfaz",
+   "desc": "Nombres, nicks y avatares maliciosos no ejecutan codigo ni rompen el estilo",
+   "ok": true,
+   "ms": 737
+  },
+  {
+   "id": "AP-71",
+   "seccion": "Seguridad de la interfaz",
+   "desc": "Los datos mal formados de otra persona no rompen la pantalla",
+   "ok": true,
+   "ms": 67
+  },
+  {
+   "id": "AP-80",
+   "seccion": "Regresion: funciones de siempre",
+   "desc": "Sin nube configurada la app funciona igual (bloques, plan, entrenar, progreso)",
+   "ok": true,
+   "ms": 441
+  },
+  {
+   "id": "AP-81",
+   "seccion": "Regresion: funciones de siempre",
+   "desc": "Datos viejos (v5, con perfil local de pareja) se migran sin perder los del usuario",
+   "ok": true,
+   "ms": 240
+  },
+  {
+   "id": "AP-82",
+   "seccion": "Regresion: funciones de siempre",
+   "desc": "La app instalada sin conexion ni nube arranca (service worker y archivos propios)",
+   "ok": true,
+   "ms": 1
+  },
+  {
+   "id": "AP-83",
+   "seccion": "Regresion: funciones de siempre",
+   "desc": "Sin errores de JavaScript en ningun celular durante toda la prueba",
+   "ok": true,
+   "ms": 0
+  }
+ ]
+}

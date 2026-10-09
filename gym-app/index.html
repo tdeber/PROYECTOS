@@ -103,11 +103,13 @@ html{background:#0e1116}
 #nv{padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
 input,select,textarea{box-sizing:border-box}
 .av{position:relative}
+#nv button{position:relative}
+.bdg{position:absolute;top:6px;left:calc(50% + 8px);width:9px;height:9px;border-radius:50%;background:var(--bad)}
 .av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 .tgl{width:40px;height:24px;border-radius:12px;background:#2a303d;border:0;position:relative;flex:none;padding:0;cursor:pointer}
 .tgl::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#8f9ab0;transition:left .15s}
 .tgl.on{background:#2c5ea8}.tgl.on::after{left:19px;background:#fff}
-.av i{position:absolute;right:-3px;bottom:-3px;width:12px;height:12px;border-radius:50%;border:2px solid var(--bg);background:var(--ok)}
+.av i{position:absolute;right:-3px;bottom:-3px;width:12px;height:12px;border-radius:50%;border:2px solid var(--bg);background:var(--dot,var(--ok))}
 </style>
 </head><body>
 <div id="app">
@@ -152,7 +154,7 @@ const NEWEX=[['Sentadilla con rusa','Pierna','Pesa rusa'],['Bisagra sobre colcho
 EXS.push(...NEWEX);
 function emptyState(){
  const ex=EXS.map((x,i)=>({id:'e'+i,n:x[0],g:x[1],eq:x[2]})),mk=n=>{const plan={};for(let d=0;d<7;d++)plan[d]=[];return{name:n,blocks:[],plan,logs:[],bw:[],photos:[],fixed:[]}};
- return{v:5,setup:false,me:'t',ex,u:{t:mk('Yo'),s:mk('Pareja')},draft:null};
+ return{v:6,setup:false,me:'t',ex,u:{t:mk('Yo')},draft:null,mt:0,syncedMt:0,linkedUid:null};
 }
 let S;try{S=JSON.parse(localStorage.getItem(LS))}catch(e){S=null}if(!S||!S.u)S=emptyState();
 // El catálogo siempre se completa con los ejercicios que falten
@@ -160,23 +162,29 @@ EXS.forEach(x=>{if(!S.ex.find(e=>e.n===x[0]))S.ex.push({id:'e'+uid(),n:x[0],g:x[
 // v5: se borran los datos de ejemplo del prototipo (entrenos, peso y fotos); quedan nombres, bloques y plan
 function migrate5(){if(S.v>=5)return;for(const k of ['t','s']){const u=S.u[k];u.logs=[];u.bw=[];u.photos=[];u.fixed=u.fixed||[]}S.draft=null;S.setup=true;S.v=5;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 migrate5();
-function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast('No se pudo guardar en este dispositivo')}}
-const U=()=>S.u[S.me],OK=()=>S.me==='t'?'s':'t',O=()=>S.u[OK()];
+// v6: cada persona tiene su cuenta; el perfil local "pareja" desaparece (la pareja ahora es un grupo)
+function migrate6(){if(S.v>=6)return;if(S.me==='s'&&S.u.s){S.u.t=S.u.s}S.me='t';delete S.u.s;S.u.t.photos=S.u.t.photos||[];S.u.t.fixed=S.u.t.fixed||[];S.mt=Date.now();S.syncedMt=0;S.linkedUid=null;S.v=6;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+migrate6();
+function save(bump=true){
+ if(bump){const ds=docStr();if(ds!==lastDocStr){lastDocStr=ds;S.mt=Date.now();pushSoon()}}
+ try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast('No se pudo guardar en este dispositivo')}}
+const U=()=>S.u[S.me];
+const UU=k=>typeof k==='object'?k:S.u[k];
 const X=id=>S.ex.find(e=>e.id===id)||{id,n:'Ejercicio borrado',g:'',eq:''};
 const col=k=>k==='t'?'var(--ct)':'var(--cs)';
 let ui={tab:'hoy',bseg:'bloques',pseg:'ej',weekOf:'me',cal:null,progEx:null,metric:'kg',sheet:null,full:null,q:'',g:'',arm:null};
 
 function weekDates(base){const d=base?new Date(base):new Date();d.setDate(d.getDate()-dow(d));return Array.from({length:7},(_,i)=>{const x=new Date(d);x.setDate(d.getDate()+i);return x})}
-const logOn=(k,date)=>S.u[k].logs.find(l=>l.date===date);
-function streak(k){const u=S.u[k];let n=0;const now=new Date();for(let i=0;i<120;i++){const d=new Date(now);d.setDate(now.getDate()-i);const done=u.logs.some(l=>l.date===iso(d));if(done)n++;else if(u.plan[dow(d)].length&&i>0)break}return n}
-function weekStats(k){const u=S.u[k],ds=weekDates();return{done:ds.filter(d=>logOn(k,iso(d))).length,plan:ds.filter(d=>u.plan[dow(d)].length).length}}
+const logOn=(k,date)=>UU(k).logs.find(l=>l.date===date);
+function streak(k){const u=UU(k);let n=0;const now=new Date();for(let i=0;i<120;i++){const d=new Date(now);d.setDate(now.getDate()-i);const done=u.logs.some(l=>l.date===iso(d));if(done)n++;else if((u.plan[dow(d)]||[]).length&&i>0)break}return n}
+function weekStats(k){const u=UU(k),ds=weekDates();return{done:ds.filter(d=>logOn(k,iso(d))).length,plan:ds.filter(d=>(u.plan[dow(d)]||[]).length).length}}
 const vol=l=>l.entries.reduce((a,e)=>a+e.sets.reduce((b,s)=>b+s.kg*s.reps,0),0);
 const blockMin=b=>Math.round(b.items.reduce((a,i)=>{const m=/(\d+)\s*(?:-\s*\d+\s*)?min/.exec(i.reps);return a+(m?+m[1]*60:i.sets*(45+i.rest))},0)/60);
 const chipB=(b,x='')=>`<span class="chip" style="--c:${b.c}">${esc(b.code)} · ${esc(b.name)}</span>`;
-function lastSets(k,exId){const ls=S.u[k].logs;for(let i=ls.length-1;i>=0;i--){const e=ls[i].entries.find(x=>x.ex===exId);if(e&&e.sets.length)return e.sets}return null}
-function bestKg(k,exId){let m=0;S.u[k].logs.forEach(l=>l.entries.forEach(e=>{if(e.ex===exId)e.sets.forEach(s=>{if(s.kg>m)m=s.kg})}));return m}
-function series(k,exId,metric){const pts=[];S.u[k].logs.forEach(l=>{const e=l.entries.find(x=>x.ex===exId);if(!e)return;let v=0;e.sets.forEach(s=>{const c=metric==='reps'?s.reps:metric==='rm'?s.kg*(1+s.reps/30):s.kg;if(c>v)v=c});pts.push({t:pd(l.date).getTime(),v:Math.round(v*10)/10})});return pts}
-function prEvents(k){const best={},ev=[];S.u[k].logs.forEach(l=>l.entries.forEach(e=>{const m=Math.max(0,...e.sets.map(s=>s.kg));if(m>0){if(best[e.ex]!==undefined&&m>best[e.ex])ev.push({k,date:l.date,ex:e.ex,kg:m});if(best[e.ex]===undefined||m>best[e.ex])best[e.ex]=m}}));return ev}
+function lastSets(k,exId){const ls=UU(k).logs;for(let i=ls.length-1;i>=0;i--){const e=ls[i].entries.find(x=>x.ex===exId);if(e&&e.sets.length)return e.sets}return null}
+function bestKg(k,exId){let m=0;UU(k).logs.forEach(l=>l.entries.forEach(e=>{if(e.ex===exId)e.sets.forEach(s=>{if(s.kg>m)m=s.kg})}));return m}
+function series(k,exId,metric){const pts=[];UU(k).logs.forEach(l=>{const e=l.entries.find(x=>x.ex===exId);if(!e)return;let v=0;e.sets.forEach(s=>{const c=metric==='reps'?s.reps:metric==='rm'?s.kg*(1+s.reps/30):s.kg;if(c>v)v=c});pts.push({t:pd(l.date).getTime(),v:Math.round(v*10)/10})});return pts}
+function prEvents(k){const best={},ev=[];UU(k).logs.forEach(l=>l.entries.forEach(e=>{const m=Math.max(0,...e.sets.map(s=>s.kg));if(m>0){if(best[e.ex]!==undefined&&m>best[e.ex])ev.push({k,date:l.date,ex:e.ex,kg:m});if(best[e.ex]===undefined||m>best[e.ex])best[e.ex]=m}}));return ev}
 
 const CFG=window.GYM_CFG||{};
 let sb=null;
@@ -186,7 +194,7 @@ const PRIV_KEYS=[['entrenos','Entrenos y calendario','Si entrenaste hoy, tu sema
 const PRIV_DEF={entrenos:true,stats:true,plan:true,bloques:false,peso:false,fotos:false};
 const NICK_MSG={'':['Entre 3 y 20: minúsculas, números y guion bajo.',''],inv:['Usá solo minúsculas, números y guion bajo (3 a 20).','var(--bad)'],rev:['Revisando…','var(--mut)'],ok:['Disponible','var(--ok)'],tomado:['Ese nick ya está tomado.','var(--bad)'],mio:['Es tu nick actual.','var(--mut)'],err:['No se pudo revisar. Probá de nuevo.','var(--bad)']};
 const safeImg=a=>a&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(a)?`<img src="${a}" alt="">`:'';
-const avatarHtml=()=>{const p=cloud.perfil;return(p&&safeImg(p.avatar)||esc(((p&&p.nombre)||U().name||'?')[0].toUpperCase()))+(sb&&cloud.session?'<i></i>':'')};
+const avatarHtml=()=>{const p=cloud.perfil;return(p&&safeImg(p.avatar)||esc(((p&&p.nombre)||U().name||'?')[0].toUpperCase()))+(sb&&cloud.session?`<i style="--dot:${SYNC_COL[sync.state]||'var(--mut)'}"></i>`:'')};
 function cloudInit(){
  if(!CFG.url||!CFG.key||!(window.supabase&&window.supabase.createClient))return;
  try{sb=window.supabase.createClient(CFG.url,CFG.key)}catch(e){sb=null;return}
@@ -200,7 +208,8 @@ async function loadPerfil(){
  if(r.error){cloud.err=navigator.onLine===false?'Sin conexión a internet.':'No se pudo leer tu perfil.';render();return}
  cloud.perfil=r.data||null;cloud.err='';
  if(!cloud.perfil&&ui.full!=='setup'&&ui.full!=='work')ui.full='alta';
- render()}
+ render();
+ if(cloud.perfil){syncNow();loadGroups()}}
 async function cAuth(kind){
  const email=($('#em').value||'').trim(),pw=$('#pw').value||'';cloud.em=email;
  if(!email||pw.length<8){cloud.err='Escribí tu email y una clave de al menos 8 caracteres.';render();return}
@@ -240,7 +249,7 @@ async function cAlta(){
  if(!nombre){toast('Escribí tu nombre');return}
  let r;try{r=await sb.from('perfiles').insert({user_id:cloud.session.user.id,nick,nombre,avatar:cloud.avTmp,privacidad:PRIV_DEF})}catch(e){r={error:e}}
  if(r.error){if(r.error.code==='23505')setNickSt('tomado');else toast('No se pudo crear el perfil. Probá de nuevo.');return}
- cloud.perfil={nick,nombre,avatar:cloud.avTmp,privacidad:Object.assign({},PRIV_DEF)};cloud.avTmp=null;cloud.nickIn='';ui.full=null;render();toast('Perfil creado')}
+ cloud.perfil={nick,nombre,avatar:cloud.avTmp,privacidad:Object.assign({},PRIV_DEF)};cloud.avTmp=null;cloud.nickIn='';ui.full=null;render();toast('Perfil creado');syncNow();loadGroups()}
 async function cNombre(){
  const v=($('#pnom').value||'').trim();if(!v){toast('Escribí tu nombre');return}
  const r=await pUpdate({nombre:v});if(r.error){toast('No se pudo guardar');return}
@@ -276,10 +285,187 @@ function vPerfil(){
  else if(!cloud.session)top=`<div class="card"><div class="lbl">Entrá o creá tu cuenta</div><div class="mut sm-t">Cada persona tiene su propia cuenta, con su email. Después elegís tu nick y, si querés, armás grupos con otras personas.</div><input id="em" type="email" placeholder="email@ejemplo.com" autocomplete="email" data-in="em" value="${esc(cloud.em)}"><input id="pw" type="password" placeholder="Clave (mínimo 8)" autocomplete="current-password">${cloud.err?`<div class="sm-t" style="color:var(--bad)">${esc(cloud.err)}</div>`:''}${cloud.info?`<div class="sm-t" style="color:var(--ok)">${esc(cloud.info)}</div>`:''}<div class="row"><button class="btn" data-a="login">${cloud.busy?'Un momento…':'Entrar'}</button><button class="btn g" data-a="signup">Crear cuenta</button></div><button class="btn g sm" data-a="forgot" style="align-self:flex-start">Olvidé mi clave</button></div>`;
  else if(!p)top=`<div class="card"><div class="lbl">Cuenta</div><div>${esc(cloud.session.user.email)}</div>${cloud.err?`<div class="sm-t" style="color:var(--bad)">${esc(cloud.err)}</div>`:'<div class="mut sm-t">Falta completar tu perfil.</div>'}<button class="btn" data-a="alta2">Completar mi perfil</button><button class="btn g" data-a="logout">Cerrar sesión</button></div>`;
  else top=`<div class="card">${avBlock()}<div class="lbl">Nombre</div><div class="row"><input id="pnom" value="${esc(p.nombre)}" maxlength="24"><button class="btn g sm" data-a="pnombre">Guardar</button></div><div class="lbl">Nick</div><div class="row"><input id="nick" data-in="nick" value="${esc(cloud.nickIn||p.nick)}" maxlength="20" autocapitalize="off" autocomplete="off"><button class="btn g sm" data-a="pnick">Cambiar</button></div><div id="nickst" class="xs mut">${NICK_MSG[cloud.nickSt||''][0]}</div></div>
- <div class="card"><div class="lbl">Privacidad</div><div class="mut sm-t">Elegí qué pueden ver de vos las personas de tus grupos. Vale para todos tus grupos.</div><div class="row"><button class="btn g sm" style="flex:1" data-a="ppreset" data-all="0">Solo lo básico</button><button class="btn g sm" style="flex:1" data-a="ppreset" data-all="1">Compartir todo</button></div>${PRIV_KEYS.map(k=>`<div class="row sp"><div class="grow"><b>${k[1]}</b><div class="mut xs">${k[2]}</div></div><button class="tgl ${p.privacidad[k[0]]?'on':''}" data-a="ppriv" data-k="${k[0]}" aria-label="${k[1]}" aria-pressed="${p.privacidad[k[0]]?'true':'false'}"></button></div>`).join('')}<div class="mut xs">Tu nombre, tu nick y tu foto de perfil se ven dentro de tus grupos. Tu email no lo ve nadie.</div></div>
- <div class="card"><div class="lbl">Cuenta</div><div>${esc(cloud.session.user.email)}</div><button class="btn g" data-a="logout">Cerrar sesión</button></div>`;
+ <div class="card"><div class="lbl">Privacidad</div><div class="mut sm-t">Elegí qué pueden ver de vos las personas de tus grupos. Vale para todos tus grupos.</div><div class="row"><button class="btn g sm" style="flex:1" data-a="ppreset" data-all="0">Solo lo básico</button><button class="btn g sm" style="flex:1" data-a="ppreset" data-all="1">Compartir todo</button></div>${PRIV_KEYS.map(k=>`<div class="row sp"><div class="grow"><b>${k[1]}</b><div class="mut xs">${k[2]}</div></div><button class="tgl ${p.privacidad[k[0]]?'on':''}" data-a="ppriv" data-k="${k[0]}" aria-label="${k[1]}" aria-pressed="${p.privacidad[k[0]]?'true':'false'}"></button></div>`).join('')}<div class="mut xs">Tu nombre, tu nick y tu foto de perfil se ven dentro de tus grupos. Tu email no lo ve nadie. Las fotos de progreso se compartirán más adelante.</div></div>
+ <div class="card"><div class="lbl">Cuenta</div><div>${esc(cloud.session.user.email)}</div><div class="sm-t">Sincronización: <span style="color:${SYNC_COL[sync.state]}">${SYNC_TXT[sync.state]}</span>${sync.state==='error'&&sync.err?' · '+esc(sync.err):''}</div><button class="btn g" data-a="syncnow">Sincronizar ahora</button><button class="btn g" data-a="logout">${ui.arm==='logout'?'Cerrar sesión igual':'Cerrar sesión'}</button><div class="mut xs">Al cerrar sesión se borran tus datos de este celular (quedan guardados en tu cuenta) para que nadie más los vea. Las fotos de progreso todavía no se guardan en la cuenta.</div></div>`;
  return`<div class="fh"><button class="ic" data-a="pclose" aria-label="Volver">${ic('back')}</button><h2 class="grow">Perfil</h2></div><div class="fb">${top}
- <div class="card"><div class="lbl">Datos de este celular</div><div class="mut xs">Por ahora tus entrenos se guardan solo en este celular. Estos son los nombres de los dos perfiles locales.</div><div class="row"><input id="nt" value="${esc(S.u.t.name)}" maxlength="12"><input id="ns" value="${esc(S.u.s.name)}" maxlength="12"></div><button class="btn g" data-a="names">Guardar nombres</button><button class="btn bad" data-a="wipe">${ui.arm==='wipe'?'Tocá de nuevo para borrar TODO':'Limpiar todo y empezar de cero'}</button><div class="mut xs">Borra bloques, plan, entrenamientos, peso y fotos de los dos y vuelve a la pantalla de registro. Los ejercicios del catálogo se conservan.</div></div></div>`}
+ <div class="card"><div class="lbl">Datos de este celular</div><div class="mut xs">${cloud.perfil?`Tus entrenos se guardan en este celular y se envían a tu cuenta cuando hay internet.`:`Por ahora tus entrenos se guardan solo en este celular. Con una cuenta se guardan también en la nube.`}</div><input id="nt" value="${esc(S.u.t.name)}" maxlength="24"><button class="btn g" data-a="names">Guardar nombre</button><button class="btn bad" data-a="wipe">${ui.arm==='wipe'?'Tocá de nuevo para borrar TODO':'Limpiar todo y empezar de cero'}</button><div class="mut xs">Borra tus bloques, plan, entrenamientos, peso y fotos de este celular y de tu cuenta, y vuelve a la pantalla de registro. Los ejercicios del catálogo se conservan.</div></div></div>`}
+
+const sync={state:'local',err:'',t:null,busy:false,pushed:''};
+const SYNC_TXT={local:'solo en este celular',ok:'sincronizado',syncing:'sincronizando…',pending:'cambios sin enviar',offline:'sin conexión',error:'error al sincronizar'};
+const SYNC_COL={local:'var(--mut)',ok:'var(--ok)',syncing:'var(--warn)',pending:'var(--warn)',offline:'var(--mut)',error:'var(--bad)'};
+let lastDocStr='';
+const docOf=()=>{const u=U();return{ex:S.ex,user:{blocks:u.blocks,plan:u.plan,logs:u.logs,bw:u.bw,fixed:u.fixed||[]}}};
+const docStr=()=>JSON.stringify(docOf());
+function renderHd(){
+ const T={hoy:'Hoy',sem:'Semana',blo:'Bloques',pro:'Progreso',par:'Grupos'};
+ $('#hd').innerHTML=`<h1>${T[ui.tab]}</h1><button class="av" data-a="user" aria-label="Perfil y cuenta">${avatarHtml()}</button>`}
+function mergeEx(l){const map={};(Array.isArray(l)?l:[]).forEach(e=>{if(!e||!e.id)return;const mine=S.ex.find(x=>x.id===e.id),n=String(e.n||'').slice(0,80);
+ if(!mine)S.ex.push({id:e.id,n,g:e.g,eq:e.eq});
+ else if(String(mine.n).toLowerCase()!==n.toLowerCase()){const same=S.ex.find(x=>String(x.n).toLowerCase()===n.toLowerCase());if(same)map[e.id]=same.id;else{const nid='e'+uid();S.ex.push({id:nid,n,g:e.g,eq:e.eq});map[e.id]=nid}}});return map}
+function remapRefs(r,map){if(!Object.keys(map).length)return r;const f=id=>map[id]||id;
+ (r.blocks||[]).forEach(b=>(b.items||[]).forEach(i=>i.ex=f(i.ex)));(r.logs||[]).forEach(l=>(l.entries||[]).forEach(e=>e.ex=f(e.ex)));r.fixed=(r.fixed||[]).map(f);return r}
+function mergeById(a,b){const m=new Map();(Array.isArray(a)?a:[]).forEach(x=>x&&x.id!==undefined&&m.set(x.id,x));(Array.isArray(b)?b:[]).forEach(x=>{if(x&&x.id!==undefined&&!m.has(x.id))m.set(x.id,x)});return[...m.values()]}
+function mergeIn(rem){
+ const u=U(),r=remapRefs(JSON.parse(JSON.stringify(rem.user||{})),mergeEx(rem.ex));
+ u.blocks=mergeById(u.blocks,r.blocks);
+ u.logs=mergeById(u.logs,r.logs).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+ const bw=new Map();(Array.isArray(r.bw)?r.bw:[]).forEach(x=>x&&x.date&&bw.set(x.date,x));(u.bw||[]).forEach(x=>bw.set(x.date,x));u.bw=[...bw.values()].sort((a,b)=>a.date.localeCompare(b.date));
+ for(let i=0;i<7;i++){const l=(u.plan[i]||[]).slice();((r.plan&&Array.isArray(r.plan[i]))?r.plan[i]:[]).forEach(id=>{if(!l.includes(id)&&u.blocks.some(b=>b.id===id))l.push(id)});u.plan[i]=l}
+ u.fixed=[...new Set([...(u.fixed||[]),...(Array.isArray(r.fixed)?r.fixed:[])])]}
+function adopt(rem){
+ const u=U(),r=remapRefs(JSON.parse(JSON.stringify(rem.user||{})),mergeEx(rem.ex));
+ u.blocks=Array.isArray(r.blocks)?r.blocks:[];u.logs=Array.isArray(r.logs)?r.logs:[];u.bw=Array.isArray(r.bw)?r.bw:[];u.fixed=Array.isArray(r.fixed)?r.fixed:[];
+ const p={};for(let i=0;i<7;i++)p[i]=(r.plan&&Array.isArray(r.plan[i]))?r.plan[i]:[];u.plan=p}
+function wipeLocal(){const u=U();u.blocks=[];u.logs=[];u.bw=[];u.fixed=[];u.photos=[];const p={};for(let i=0;i<7;i++)p[i]=[];u.plan=p;S.draft=null;S.mt=0;S.syncedMt=0;S.linkedUid=null;lastDocStr=docStr()}
+function pushSoon(){if(!sb||!cloud.perfil)return;sync.state='pending';renderHd();clearTimeout(sync.t);sync.t=setTimeout(syncNow,1500)}
+async function pushDoc(uid){
+ const mt=S.mt||Date.now();S.mt=mt;
+ const r=await sb.from('datos').upsert({user_id:uid,data:Object.assign({mt},docOf()),actualizado:new Date().toISOString()},{onConflict:'user_id'});
+ if(r&&r.error)throw r.error;
+ S.syncedMt=mt;S.linkedUid=uid;lastDocStr=docStr();save(false)}
+async function syncNow(){
+ if(!sb||!cloud.session||!cloud.perfil||sync.busy)return;
+ sync.busy=true;sync.state='syncing';renderHd();
+ try{
+  const uid=cloud.session.user.id;
+  if(S.linkedUid&&S.linkedUid!==uid)wipeLocal();            // datos de otra cuenta en este celular
+  const r=await sb.from('datos').select('data').eq('user_id',uid).maybeSingle();
+  if(r.error)throw r.error;
+  const rem=r.data&&r.data.data&&r.data.data.user?r.data.data:null;
+  if(!rem){await pushDoc(uid)}                                // primera vez en la nube: subir lo que hay
+  else if(S.linkedUid!==uid){mergeIn(rem);S.mt=Date.now();await pushDoc(uid)}   // primera vinculacion: unir sin perder nada
+  else if(rem.mt===S.syncedMt){if(S.mt>S.syncedMt)await pushDoc(uid)}
+  else if(S.mt>S.syncedMt){mergeIn(rem);S.mt=Date.now();await pushDoc(uid)}      // cambiaron los dos lados
+  else{adopt(rem);S.mt=rem.mt;S.syncedMt=rem.mt;S.linkedUid=uid;lastDocStr=docStr();save(false)} // solo cambio la nube
+  sync.state='ok';sync.err=''
+ }catch(e){sync.state=navigator.onLine===false?'offline':'error';sync.err=(e&&e.message)||''}
+ sync.busy=false;if(ui.full==='work')renderHd();else render()}
+
+const GCOL=['#5b9dff','#ff7aa8','#f2b84b','#6fd6a0','#a78bfa','#ff9e6b','#4fd1d9'];
+const colSafe=c=>/^#[0-9a-fA-F]{6}$/.test(c||'')?c:'#5b9dff';
+const G={list:[],invs:[],loaded:false,err:'',busy:false,mem:{},sent:{},data:{}};
+const ERRMAP={nick_no_existe:'No encontramos ese nick. Revisá que esté bien escrito.',ya_miembro:'Esa persona ya está en el grupo.',ya_invitado:'Ya le enviaste una invitación.',no_creador:'Solo quien creó el grupo puede hacer eso.',grupo_lleno:'El grupo está lleno (máximo 20 personas).',sin_perfil:'Primero completá tu perfil.',nombre_invalido:'El nombre debe tener entre 1 y 30 caracteres.',demasiados_grupos:'Llegaste al máximo de 10 grupos creados.',creador_no_sale:'Quien creó el grupo no puede salir. Podés eliminar el grupo.',invitacion_invalida:'Esa invitación ya no está disponible.',sin_acceso:'Ya no tenés acceso a ese grupo.',no_auth:'Tu sesión venció. Entrá de nuevo.'};
+const gErr=e=>ERRMAP[String(e&&e.message||'').trim()]||'No se pudo completar la acción. Probá de nuevo.';
+const rpc=async(fn,args)=>{try{return await sb.rpc(fn,args||{})}catch(e){return{data:null,error:e}}};
+function normalizeRemote(d){
+ if(!d||d.error)return{error:true,perm:{},logs:[],plan:{},blocks:[],bw:[],ex:[]};
+ const plan={};for(let i=0;i<7;i++)plan[i]=(d.plan&&Array.isArray(d.plan[i]))?d.plan[i]:[];
+ const logs=(Array.isArray(d.logs)?d.logs:[]).filter(l=>l&&typeof l.date==='string').map(l=>Object.assign({b:[],min:0},l,{entries:Array.isArray(l.entries)?l.entries:[]}));
+ return{vacio:!!d.vacio,perm:d.permisos||{},logs,plan,blocks:Array.isArray(d.blocks)?d.blocks:[],bw:Array.isArray(d.bw)?d.bw:[],ex:Array.isArray(d.ex)?d.ex:[]}}
+async function loadGroups(){
+ if(!sb||!cloud.perfil)return;
+ const [a,b]=await Promise.all([rpc('mis_grupos'),rpc('mis_invitaciones')]);
+ if(a.error||b.error){G.err=navigator.onLine===false?'Sin conexión a internet.':'No se pudieron cargar tus grupos.';render();return}
+ G.list=a.data||[];G.invs=b.data||[];G.loaded=true;G.err='';render()}
+async function loadGroup(gid){
+ G.busy=true;render();
+ const m=await rpc('miembros_de',{g:gid});
+ if(m.error){G.busy=false;ui.gv=null;toast(gErr(m.error));await loadGroups();return}
+ G.mem[gid]=m.data||[];const g=G.list.find(x=>x.id===gid),me=cloud.session.user.id;
+ const jobs=G.mem[gid].filter(x=>x.user_id!==me).map(async x=>{const r=await rpc('ver_datos',{p_user:x.user_id});G.data[x.user_id]=r.error?{error:true,perm:{},logs:[],plan:{},blocks:[],bw:[],ex:[]}:normalizeRemote(r.data)});
+ if(g&&g.soy_creador)jobs.push((async()=>{const r=await rpc('invitaciones_enviadas',{g:gid});G.sent[gid]=r.error?[]:(r.data||[])})());
+ await Promise.all(jobs);G.busy=false;render()}
+const meId=()=>cloud.session&&cloud.session.user.id;
+function mv(m){if(m.user_id===meId()){const u=U();return{self:true,perm:{entrenos:true,stats:true,plan:true,bloques:true,peso:true},logs:u.logs,plan:u.plan,blocks:u.blocks,bw:u.bw,ex:S.ex}}return G.data[m.user_id]}
+const gColor=(gid,uid)=>GCOL[Math.max(0,(G.mem[gid]||[]).findIndex(x=>x.user_id===uid))%GCOL.length];
+function mAv(m,c,size){size=size||34;return`<span class="av" style="width:${size}px;height:${size}px;font-size:${Math.round(size/2)}px;border-color:${c};color:${c}">${safeImg(m.avatar)||esc(String(m.nombre||'?')[0].toUpperCase())}</span>`}
+const exName=(v,id)=>{const e=(v.ex||[]).find(x=>x.id===id);return e?e.n:'Ejercicio'};
+const lockC=t=>`<div class="card" style="border-style:dashed"><div class="row"><span class="chip" style="--c:var(--mut)">privado</span><span class="mut sm-t">${esc(t)}</span></div></div>`;
+function copyBlock(b,v){
+ const nb=JSON.parse(JSON.stringify(b));nb.id=S.me+uid();nb.c=colSafe(nb.c);nb.name=String(nb.name||'Bloque').slice(0,40);
+ const used=U().blocks.map(x=>x.code);nb.code=String(nb.code||'A').slice(0,2);if(used.includes(nb.code))nb.code=[...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].find(c=>!used.includes(c))||nb.code;
+ nb.items=(Array.isArray(nb.items)?nb.items:[]).map(it=>{const rx=(v.ex||[]).find(e=>e.id===it.ex),n=rx?String(rx.n):'';
+  let mine=S.ex.find(e=>e.n.toLowerCase()===n.toLowerCase());
+  if(!mine&&n){mine={id:'e'+uid(),n:n.slice(0,80),g:GROUPS.includes(rx.g)?rx.g:'Pecho',eq:EQUIP.includes(rx.eq)?rx.eq:'Otro'};S.ex.push(mine)}
+  return mine?{ex:mine.id,sets:Math.min(10,Math.max(1,+it.sets||3)),reps:String(it.reps||'10').slice(0,12),rest:Math.min(300,Math.max(0,+it.rest||60))}:null}).filter(Boolean);
+ U().blocks.push(nb);save();toast('Bloque copiado a tus bloques')}
+function dayRows(date){
+ const g=ui.gv&&G.list.find(x=>x.id===ui.gv.gid);if(!g)return'';
+ const rows=(G.mem[g.id]||[]).map(m=>{const v=mv(m);if(!v||!v.perm.entrenos)return'';const l=logOn(v,date);if(!l)return'';const c=gColor(g.id,m.user_id);
+  return`<div class="card"><b style="color:${c}">${esc(m.nombre)}</b><div>${(l.b||[]).map(b=>esc(b.name)).join(' + ')||'Entrenamiento libre'}</div><div class="mut xs">${l.min||0} min${l.entries.length?' · '+l.entries.length+' ejercicios':''}</div></div>`}).join('');
+ return`<h2>${esc(fd(date,{weekday:'long',day:'numeric',month:'long'}))}</h2>${rows||'<div class="mut">Nadie entrenó este día (o no lo comparten).</div>'}`}
+
+function vGrupos(){
+ if(!sb||!cloud.session||!cloud.perfil)return`<div class="card"><div class="lbl">Grupos</div><div class="mut sm-t">Armá grupos con tu pareja, amigos o familia para ver los entrenos de los demás. Vos elegís qué ven de vos. Para empezar hace falta una cuenta y tu perfil.</div><button class="btn" data-a="user">${sb?'Entrar o crear cuenta':'Ver perfil'}</button></div>`;
+ if(ui.gv&&ui.gv.person)return vPersona();
+ if(ui.gv)return vGrupo();
+ const inv=G.invs.map(i=>`<div class="card"><div><b>${esc(i.grupo)}</b><div class="mut xs">Te invitó ${esc(i.de_nombre)} (@${esc(i.de_nick)})</div></div><div class="row"><button class="btn sm" data-a="ginv" data-i="${esc(i.id)}" data-ok="1">Aceptar</button><button class="btn g sm" data-a="ginv" data-i="${esc(i.id)}" data-ok="0">Rechazar</button></div></div>`).join('');
+ const gr=G.list.map(g=>`<button class="card" style="text-align:left;color:inherit" data-a="gopen" data-g="${esc(g.id)}"><div class="row sp"><b>${esc(g.nombre)}</b><span class="mut">${ic('next','s')}</span></div><div class="mut xs">${g.miembros} ${g.miembros===1?'persona':'personas'}${g.soy_creador?' · lo creaste vos':''}</div></button>`).join('');
+ return`${G.err?`<div class="card"><div class="sm-t" style="color:var(--bad)">${esc(G.err)}</div></div>`:''}${G.invs.length?`<div class="lbl">Invitaciones (${G.invs.length})</div>${inv}`:''}
+ <div class="row sp"><div class="lbl">Mis grupos</div><button class="btn g sm" data-a="grefresh">Actualizar</button></div>
+ ${gr||(G.loaded?`<div class="card" style="text-align:center"><b>Todavía no estás en un grupo</b><div class="mut sm-t">Creá uno e invitá a tu pareja o amigos por su nick. Vos elegís qué ven de vos en Perfil → Privacidad.</div></div>`:'<div class="mut sm-t">Cargando…</div>')}
+ <div class="card"><div class="lbl">Nuevo grupo</div><input id="gnom" placeholder="Nombre (ej.: Familia)" maxlength="30" autocomplete="off"><button class="btn" data-a="gnew">Crear grupo</button></div>
+ <div class="mut xs" style="text-align:center">Tu nick: <b style="color:var(--fg)">@${esc(cloud.perfil.nick)}</b></div>`}
+function vGrupo(){
+ const g=G.list.find(x=>x.id===ui.gv.gid);if(!g){ui.gv=null;return vGrupos()}
+ const mem=G.mem[g.id],seg=ui.gv.seg||'res',me=meId();
+ const head=`<div class="row"><button class="ic" data-a="gback" aria-label="Volver">${ic('back')}</button><h2 class="grow ell">${esc(g.nombre)}</h2><button class="btn g sm" data-a="grefresh">Actualizar</button></div><div class="seg">${[['res','Resumen'],['mie','Miembros'],['aju','Ajustes']].map(t=>`<button data-a="gseg" data-s="${t[0]}" class="${seg===t[0]?'on':''}">${t[1]}</button>`).join('')}</div>`;
+ if(!mem)return head+'<div class="mut sm-t">Cargando…</div>';
+ let body='';const now=new Date(),td=iso(now);
+ if(seg==='res'){
+  const hoy=mem.map(m=>{const v=mv(m),c=gColor(g.id,m.user_id);let st,ok=false;
+   if(!v||v.error)st='No se pudo cargar';
+   else if(!v.perm.entrenos)st='No comparte sus entrenos';
+   else{const l=logOn(v,td);if(l){ok=true;st='Entrenó hoy'+((l.b||[]).length?' · '+l.b.map(b=>esc(b.name)).join(' + '):'')}
+    else if(v.perm.plan){const bl=(v.plan[dow(now)]||[]).map(id=>(v.blocks.find(b=>b.id===id)||{}).name).filter(Boolean);st=bl.length?'Le toca hoy · '+bl.map(esc).join(' + '):'Descansa hoy'}
+    else st='Todavía no entrenó hoy'}
+   return`<div class="row sp"><div class="row">${mAv(m,c)}<div><b>${esc(m.nombre)}${m.user_id===me?' (vos)':''}</b><div class="mut xs">${st}</div></div></div>${v&&v.perm&&v.perm.entrenos?`<span class="chip" style="--c:${ok?'var(--ok)':'var(--warn)'}">${ok?'hecho':'pendiente'}</span>`:'<span class="chip" style="--c:var(--mut)">privado</span>'}</div>`}).join('');
+  const sem=mem.filter(m=>{const v=mv(m);return v&&v.perm&&v.perm.entrenos}).map(m=>{const v=mv(m),ws=weekStats(v),pl=v.perm.plan?ws.plan:0,c=gColor(g.id,m.user_id);
+   return`<div><div class="row sp xs"><span>${esc(m.nombre)}</span><span class="mut">${ws.done}${pl?' de '+pl:''}</span></div><div class="bar" style="--c:${c}"><i style="width:${Math.min(100,(pl?ws.done/pl:ws.done/5)*100)}%"></i></div></div>`}).join('');
+  if(!ui.cal)ui.cal={y:now.getFullYear(),m:now.getMonth()};
+  const {y,m:mo}=ui.cal,first=new Date(y,mo,1),nd=new Date(y,mo+1,0).getDate(),off=dow(first);
+  const mesTxt=first.toLocaleDateString('es-AR',{month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase());
+  let cells=D1.map(x=>`<button class="h" disabled>${x}</button>`).join('')+'<span></span>'.repeat(off);
+  for(let k=1;k<=nd;k++){const ds=y+'-'+pad(mo+1)+'-'+pad(k);cells+=`<button class="${ds===td?'td':''}" data-a="day" data-d="${ds}">${k}<span class="dots">${mem.map(m=>{const v=mv(m);return v&&v.perm&&v.perm.entrenos&&logOn(v,ds)?`<i style="background:${gColor(g.id,m.user_id)}"></i>`:''}).join('')}</span></button>`}
+  const rec=mem.flatMap(m=>{const v=mv(m);return v&&v.perm&&v.perm.stats?prEvents(v).map(p=>Object.assign(p,{m,v})):[]}).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  body=`<div class="card"><div class="lbl">Hoy</div>${hoy}</div><div class="card"><div class="lbl">Esta semana</div>${sem||'<div class="mut sm-t">Nadie comparte sus entrenos.</div>'}</div>
+  <div class="card"><div class="row sp"><button class="ic" data-a="calm" data-d="-1" aria-label="Mes anterior">${ic('back','s')}</button><b>${mesTxt}</b><button class="ic" data-a="calm" data-d="1" aria-label="Mes siguiente">${ic('next','s')}</button></div><div class="cal">${cells}</div></div>
+  <div class="card"><div class="lbl">Últimos récords</div>${rec.map(p=>`<div class="row sp"><span class="ell"><b style="color:${gColor(g.id,p.m.user_id)}">${esc(p.m.nombre)}</b> · ${esc(exName(p.v,p.ex))}</span><span class="num">${fk(p.kg)} kg</span></div>`).join('')||'<div class="mut sm-t">Todavía no hay récords para mostrar.</div>'}</div>`;
+ }
+ if(seg==='mie'){
+  body=mem.map(m=>{const c=gColor(g.id,m.user_id);return`<div class="card"><div class="row sp"><button style="background:none;border:0;color:inherit;text-align:left;display:flex;gap:10px;align-items:center;padding:0;min-width:0" data-a="gperson" data-u="${esc(m.user_id)}">${mAv(m,c)}<div class="grow"><b>${esc(m.nombre)}${m.user_id===me?' (vos)':''}</b><div class="mut xs">@${esc(m.nick)}${m.es_creador?' · creó el grupo':''}</div></div></button>${g.soy_creador&&m.user_id!==me?`<button class="btn bad sm" data-a="gquitar" data-u="${esc(m.user_id)}">${ui.arm==='q'+m.user_id?'Confirmar':'Eliminar'}</button>`:`<span class="mut">${ic('next','s')}</span>`}</div></div>`}).join('')
+   +((g.soy_creador&&(G.sent[g.id]||[]).length)?`<div class="lbl">Invitaciones enviadas</div>`+G.sent[g.id].map(i=>`<div class="card"><div class="row sp"><div><b>${esc(i.nombre)}</b><div class="mut xs">@${esc(i.nick)} · pendiente</div></div><button class="btn g sm" data-a="gcancel" data-i="${esc(i.id)}">Cancelar</button></div></div>`).join(''):'')
+   +'<div class="mut xs" style="text-align:center">Tocá una persona para ver su perfil. Solo vas a ver lo que cada una habilitó.</div>';
+ }
+ if(seg==='aju'){
+  const pv=cloud.perfil.privacidad;
+  body=(g.soy_creador?`<div class="card"><div class="lbl">Nombre del grupo</div><input id="grn" value="${esc(g.nombre)}" maxlength="30"><button class="btn g" data-a="grename">Guardar nombre</button></div>
+  <div class="card"><div class="lbl">Invitar por nick</div><input id="gin" placeholder="@nick de la persona" maxlength="21" autocapitalize="off" autocomplete="off">${ui.gerr?`<div class="sm-t" style="color:var(--bad)">${esc(ui.gerr)}</div>`:''}<button class="btn" data-a="ginvitar">Enviar invitación</button></div>`:`<div class="card"><div class="mut sm-t">Solo quien creó el grupo puede invitar gente, cambiarle el nombre y sacar miembros.</div></div>`)
+  +`<div class="card"><div class="row sp"><div class="lbl">Lo que compartís</div><button class="btn g sm" data-a="user">Cambiar</button></div>${PRIV_KEYS.map(k=>`<div class="row sp sm-t"><span>${k[1]}</span><span class="chip" style="--c:${pv[k[0]]?'var(--ok)':'var(--mut)'}">${pv[k[0]]?'compartido':'privado'}</span></div>`).join('')}<div class="mut xs">Vale para todos tus grupos.</div></div>`
+  +(g.soy_creador?`<button class="btn bad" data-a="gdel">${ui.arm==='gdel'?'Tocá de nuevo para eliminar el grupo':'Eliminar grupo'}</button>`:`<button class="btn bad" data-a="gsalir">${ui.arm==='gsalir'?'Tocá de nuevo para salir':'Salir del grupo'}</button>`);
+ }
+ return head+body}
+function vPersona(){
+ const g=G.list.find(x=>x.id===ui.gv.gid);if(!g){ui.gv=null;return vGrupos()}
+ const m=(G.mem[g.id]||[]).find(x=>x.user_id===ui.gv.person);if(!m){ui.gv.person=null;return vGrupo()}
+ const v=mv(m),c=gColor(g.id,m.user_id),seg=ui.gv.pseg||'est',self=m.user_id===meId();
+ const head=`<div class="row"><button class="ic" data-a="gpback" aria-label="Volver">${ic('back')}</button><h2 class="grow ell">${esc(m.nombre)}</h2></div><div class="row">${mAv(m,c,48)}<div><b style="font-size:16px">${esc(m.nombre)}</b><div class="mut xs">@${esc(m.nick)}</div></div></div><div class="seg">${[['est','Estadísticas'],['plan','Plan'],['blq','Bloques']].map(t=>`<button data-a="gpseg" data-s="${t[0]}" class="${seg===t[0]?'on':''}">${t[1]}</button>`).join('')}</div>`;
+ if(!v)return head+'<div class="mut sm-t">Cargando…</div>';
+ if(v.error)return head+lockC('No se pudieron cargar sus datos. Probá de nuevo.');
+ if(v.vacio)return head+`<div class="card"><div class="mut sm-t">Todavía no cargó datos.</div></div>`;
+ const P=v.perm||{};let body='';
+ if(seg==='est'){
+  if(!P.stats)body=lockC(`${m.nombre} no comparte sus estadísticas.`);
+  else{
+   const ids=[...new Set(v.logs.flatMap(l=>l.entries.map(e=>e.ex)))].filter(id=>series(v,id,'kg').some(p=>p.v>0)||series(v,id,'reps').length);
+   const ws=weekStats(v);
+   body=`<div class="row"><div class="stat"><div class="big num">${ws.done}${P.plan?`<span class="mut" style="font-size:18px">/${ws.plan}</span>`:''}</div><div class="mut xs">esta semana</div></div><div class="stat"><div class="big num">${streak(v)}</div><div class="mut xs">racha</div></div><div class="stat"><div class="big num">${v.logs.length}</div><div class="mut xs">entrenos</div></div></div>`;
+   if(ids.length){const sel=ids.includes(ui.gv.pex)?ui.gv.pex:ids[0];const noKg=bestKg(v,sel)===0,pts=series(v,sel,noKg?'reps':'kg'),cur=pts.length?pts[pts.length-1].v:0,first=pts.length?pts[0].v:0;
+    body+=`<div class="card"><select data-in="gpe">${ids.map(id=>`<option value="${esc(id)}" ${id===sel?'selected':''}>${esc(exName(v,id))}</option>`).join('')}</select><div class="row sp"><div class="big num">${fk(cur)}<span class="mut" style="font-size:16px"> ${noKg?'reps':'kg'}</span></div>${pts.length>1?`<span class="chip" style="--c:${cur>=first?'var(--ok)':'var(--warn)'}">${cur-first>0?'+':''}${fk(cur-first)} desde el inicio</span>`:''}</div>${lineChart(pts,{color:c})}</div>`}
+   const rec=prEvents(v).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+   body+=`<div class="card"><div class="lbl">Récords</div>${rec.map(p=>`<div class="row sp"><span class="ell">${esc(exName(v,p.ex))}</span><span class="num"><b>${fk(p.kg)} kg</b> <span class="mut xs">${esc(fd(p.date))}</span></span></div>`).join('')||'<div class="mut sm-t">Todavía no hay récords.</div>'}</div>`}
+  body+=P.peso&&v.bw.length?`<div class="card"><div class="lbl">Peso corporal</div><div class="row sp"><div class="big num">${fk(v.bw[v.bw.length-1].kg)}<span class="mut" style="font-size:16px"> kg</span></div></div>${lineChart(v.bw.map(b=>({t:pd(b.date).getTime(),v:b.kg})),{color:c})}</div>`:(self?'':lockC(`${m.nombre} no comparte su peso corporal.`));
+ }
+ if(seg==='plan'){
+  if(!P.plan)body=lockC(`${m.nombre} no comparte su plan de la semana.`);
+  else body=DAYS.map((dn,i)=>{const bl=(v.plan[i]||[]).map(id=>v.blocks.find(b=>b.id===id)).filter(Boolean);if(!bl.length&&!['Lunes','Martes','Miércoles','Jueves','Viernes'].includes(dn))return'';
+   return`<div class="card"><div class="row sp"><b style="font:700 18px var(--disp);text-transform:uppercase">${dn}</b>${bl.length?'':'<span class="mut sm-t">Descanso</span>'}</div>${bl.map(b=>`<div><span class="chip" style="--c:${colSafe(b.c)}">${esc(b.code)} · ${esc(b.name)}</span>${P.bloques&&Array.isArray(b.items)?`<div style="margin-top:6px">${b.items.map(it=>`<div class="row sp xs"><span class="ell">${esc(exName(v,it.ex))}</span><span class="mut num">${esc(it.sets)} × ${esc(it.reps)}</span></div>`).join('')}</div>`:''}</div>`).join('')}</div>`}).join('')+(P.bloques?'':lockC(`${m.nombre} no comparte el detalle de sus ejercicios.`));
+ }
+ if(seg==='blq'){
+  if(!P.bloques)body=lockC(`${m.nombre} no comparte sus bloques ni el detalle de ejercicios.`);
+  else body=v.blocks.map((b,i)=>`<div class="card"><div class="row sp"><b class="ell">${esc(b.code)} · ${esc(b.name)}</b>${self?'':`<button class="btn g sm" data-a="gcopy" data-i="${i}">${ic('copy','s')} Copiar</button>`}</div>${(Array.isArray(b.items)?b.items:[]).map(it=>`<div class="row sp xs"><span class="ell">${esc(exName(v,it.ex))}</span><span class="mut num">${esc(it.sets)} × ${esc(it.reps)} · ${esc(it.rest)} s</span></div>`).join('')}</div>`).join('')||'<div class="mut sm-t">No tiene bloques.</div>';
+ }
+ return head+body}
 
 function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200)}
 function lineChart(pts,{unit='',color='var(--me)'}={}){
@@ -296,25 +482,22 @@ function lineChart(pts,{unit='',color='var(--me)'}={}){
 function render(keepScroll=true){
  const mn=$('#mn'),st=keepScroll?mn.scrollTop:0;
  document.documentElement.style.setProperty('--me',col(S.me));
- const titles={hoy:'Hoy',sem:'Semana',blo:'Bloques',pro:'Progreso',par:'Los dos'};
- $('#hd').innerHTML=`<h1>${titles[ui.tab]}</h1><button class="av" data-a="user" aria-label="Perfil y cuenta">${avatarHtml()}</button>`;
- mn.innerHTML=({hoy:vHoy,sem:vSem,blo:vBlo,pro:vPro,par:vPar})[ui.tab]();
- $('#nv').innerHTML=[['hoy','home','Hoy'],['sem','cal','Semana'],['blo','layers','Bloques'],['pro','chart','Progreso'],['par','users','Pareja']].map(t=>`<button data-a="tab" data-t="${t[0]}" class="${ui.tab===t[0]?'on':''}">${ic(t[1])}${t[2]}</button>`).join('');
+  renderHd();
+ mn.innerHTML=({hoy:vHoy,sem:vSem,blo:vBlo,pro:vPro,par:vGrupos})[ui.tab]();
+ $('#nv').innerHTML=[['hoy','home','Hoy'],['sem','cal','Semana'],['blo','layers','Bloques'],['pro','chart','Progreso'],['par','users','Grupos']].map(t=>`<button data-a="tab" data-t="${t[0]}" class="${ui.tab===t[0]?'on':''}">${ic(t[1])}${t[2]}${t[0]==='par'&&G.invs.length?'<i class="bdg"></i>':''}</button>`).join('');
  mn.scrollTop=st;
  renderFull();renderSheet();
 }
 
 function vHoy(){
- const u=U(),o=O(),now=new Date(),td=iso(now),ids=u.plan[dow(now)],blocks=ids.map(id=>u.blocks.find(b=>b.id===id)).filter(Boolean),mine=logOn(S.me,td);
+ const u=U(),now=new Date(),td=iso(now),ids=u.plan[dow(now)],blocks=ids.map(id=>u.blocks.find(b=>b.id===id)).filter(Boolean),mine=logOn(S.me,td);
  let hero;
  if(S.draft)hero=`<div class="card me"><div class="lbl">En curso</div><h2>Entrenamiento sin terminar</h2><div class="mut sm-t">Empezó a las ${new Date(S.draft.start).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}</div><button class="btn" data-a="resume">Continuar</button></div>`;
  else if(mine)hero=`<div class="card me"><div class="row sp"><div class="lbl">Hoy</div><span class="chip" style="--c:var(--ok)">${ic('check','s')} Hecho</span></div><h2>${mine.b.map(b=>esc(b.name)).join(' + ')||'Entrenamiento libre'}</h2><div class="mut sm-t">${mine.min} min · ${Math.round(vol(mine)).toLocaleString('es-AR')} kg de volumen</div><button class="btn g" data-a="pickstart">Entrenar otra vez</button></div>`;
  else if(blocks.length){const n=blocks.reduce((a,b)=>a+b.items.length,0),m=blocks.reduce((a,b)=>a+blockMin(b),0);
   hero=`<div class="card me"><div class="lbl">Toca hoy · ${DAYS[dow(now)]}</div><div class="row wr">${blocks.map(b=>chipB(b)).join('')}</div><div class="mut sm-t">${n} ejercicios${(u.fixed||[]).length?' + '+u.fixed.length+' fijos':''} · aprox. ${m} min</div><button class="btn" data-a="start">Empezar entrenamiento</button><button class="btn g sm" data-a="pickstart" style="align-self:flex-start">Elegir otros bloques</button></div>`}
  else hero=`<div class="card me"><div class="lbl">Hoy</div><h2>Día de descanso</h2><div class="mut sm-t">${u.blocks.length?'No tenés bloques asignados. Si querés entrenar igual, elegí qué hacer.':'Todavía no tenés bloques. Creá el primero en la pestaña Bloques.'}</div>${u.blocks.length?'<button class="btn g" data-a="pickstart">Entrenar igual</button>':'<button class="btn" data-a="tab" data-t="blo">Ir a Bloques</button>'}</div>`;
- const oLog=logOn(OK(),td),oIds=o.plan[dow(now)].map(id=>o.blocks.find(b=>b.id===id)).filter(Boolean);
- const oTxt=oLog?`Entrenó: ${oLog.b.map(b=>esc(b.name)).join(' + ')}`:oIds.length?`Le toca: ${oIds.map(b=>esc(b.name)).join(' + ')}`:'Descansa hoy';
- const partner=`<div class="card"><div class="row"><span class="av" style="width:34px;height:34px;font-size:16px;border-color:${col(OK())};color:${col(OK())}">${esc(o.name[0])}</span><div class="grow"><b>${esc(o.name)}</b><div class="mut sm-t ell">${oTxt}</div></div>${oLog?`<span class="chip" style="--c:var(--ok)">${ic('check','s')}</span>`:''}</div></div>`;
+ const partner=(cloud.perfil&&G.invs.length)?`<div class="card"><div class="row sp"><b>Tenés ${G.invs.length} ${G.invs.length===1?'invitación':'invitaciones'} a grupos</b><button class="btn sm" data-a="tab" data-t="par">Ver</button></div></div>`:'';
  const ws=weekStats(S.me),wd=weekDates(),
  strip=`<div class="week">${wd.map((d,i)=>{const k=iso(d);return`<div class="wd ${u.plan[i].length?'pl':''} ${logOn(S.me,k)?'dn':''} ${k===td?'td':''}"><span>${D1[i]}</span><b>${logOn(S.me,k)?ic('check','s'):d.getDate()}</b></div>`}).join('')}</div>`;
  const last=u.logs.slice(-3).reverse().map(l=>`<div class="row sp"><div class="grow"><div class="ell">${l.b.map(b=>esc(b.name)).join(' + ')||'Libre'}</div><div class="mut xs">${fd(l.date,{weekday:'long',day:'numeric',month:'short'})}</div></div><div class="num mut sm-t">${l.entries.reduce((a,e)=>a+e.sets.length,0)} series · ${l.min} min</div></div>`).join('');
@@ -322,9 +505,8 @@ function vHoy(){
 }
 
 function vSem(){
- const who=ui.weekOf==='me'?S.me:OK(),u=S.u[who],ro=who!==S.me,td=todayISO(),ds=weekDates();
- return`<div class="seg"><button data-a="weekof" data-w="me" class="${!ro?'on':''}">Mi semana</button><button data-a="weekof" data-w="o" class="${ro?'on':''}">Semana de ${esc(O().name)}</button></div>
- ${ro?'<div class="mut xs">Solo lectura. Podés copiar sus bloques desde la pestaña Bloques.</div>':'<div class="mut xs">Tocá un bloque para moverlo de día, editarlo o quitarlo.</div>'}
+ const who=S.me,u=U(),ro=false,td=todayISO(),ds=weekDates();
+ return`<div class="mut xs">Tocá un bloque para moverlo de día, editarlo o quitarlo.</div>
  ${ds.map((d,i)=>{const k=iso(d),bl=u.plan[i].map(id=>u.blocks.find(b=>b.id===id)).filter(Boolean),dn=logOn(who,k);
  return`<div class="card" style="${k===td?'border-color:'+col(who):''}"><div class="row sp"><div class="row"><b style="font:700 20px var(--disp);text-transform:uppercase">${DAYS[i]}</b><span class="mut sm-t">${d.getDate()}/${d.getMonth()+1}</span></div>${dn?`<span class="chip" style="--c:var(--ok)">${ic('check','s')} Hecho</span>`:k===td?'<span class="chip">Hoy</span>':''}</div>
  <div class="row wr">${bl.map(b=>ro?chipB(b):`<button class="chip" style="--c:${b.c}" data-a="chip" data-b="${b.id}" data-d="${i}">${esc(b.code)} · ${esc(b.name)}</button>`).join('')}${!ro?`<button class="chip dash" data-a="addday" data-d="${i}">${ic('plus','s')} Bloque</button>`:''}${!bl.length&&ro?'<span class="mut sm-t">Descanso</span>':''}</div>${bl.length?`<div class="mut xs">${bl.reduce((a,b)=>a+b.items.length,0)} ejercicios · aprox. ${bl.reduce((a,b)=>a+blockMin(b),0)} min</div>`:!ro?'<div class="mut xs">Descanso</div>':''}</div>`}).join('')}`;
@@ -335,9 +517,8 @@ function vBlo(){
  if(ui.bseg==='ex')return seg+`<input id="q" placeholder="Buscar ejercicio" value="${esc(ui.q)}" data-in="q" autocomplete="off"><div class="chips">${['',...GROUPS].map(g=>`<button class="chip ${ui.g===g?'sel':''}" data-a="grp" data-g="${g}">${g||'Todos'}</button>`).join('')}</div><button class="btn g" data-a="newex">${ic('plus','s')} Nuevo ejercicio</button><div id="exl">${exList('lib')}</div>`;
  const days=b=>DAYS.map((d,i)=>u.plan[i].includes(b.id)?D1[i]:'').filter(Boolean).join(' · ');
  const mine=u.blocks.map(b=>`<button class="card" style="text-align:left;color:inherit" data-a="editb" data-b="${b.id}"><div class="row"><div class="code" style="--c:${b.c}">${esc(b.code)}</div><div class="grow"><b>${esc(b.name)}</b><div class="mut xs">${b.items.length} ejercicios · aprox. ${blockMin(b)} min</div></div><span class="mut">${ic('edit','s')}</span></div><div class="mut sm-t">${b.items.slice(0,4).map(i=>esc(X(i.ex).n)).join(', ')}${b.items.length>4?'…':''}</div><div>${days(b)?`<span class="chip" style="--c:var(--ok)">${days(b)}</span>`:'<span class="chip dash">Sin día</span>'}</div></button>`).join('');
- const theirs=O().blocks.map(b=>`<div class="row"><div class="code" style="--c:${b.c}">${esc(b.code)}</div><div class="grow"><b>${esc(b.name)}</b><div class="mut xs">${b.items.length} ejercicios</div></div><button class="btn g sm" data-a="copyb" data-b="${b.id}">${ic('copy','s')} Copiar</button></div>`).join('');
  const fx=(u.fixed||[]).length?`<div class="card"><div class="lbl">★ Fijos en todos tus entrenos</div>${u.fixed.map(id=>`<button class="ex" data-a="exinfo" data-x="${id}"><div class="grow" style="color:var(--fg)">${esc(X(id).n)}</div><span class="mut">${ic('next','s')}</span></button>`).join('')}<div class="mut xs">Se suman al final de cada entrenamiento. Para agregar o quitar, abrí un ejercicio desde la pestaña Ejercicios.</div></div>`:'';
- return seg+`<button class="btn" data-a="newb">${ic('plus','s')} Nuevo bloque</button>${fx}${mine}<div class="card"><div class="lbl">Bloques de ${esc(O().name)}</div>${theirs}</div>`;
+ return seg+`<button class="btn" data-a="newb">${ic('plus','s')} Nuevo bloque</button>${fx}${mine}`;
 }
 function exList(mode){
  const q=ui.q.trim().toLowerCase(),list=S.ex.filter(e=>(!ui.g||e.g===ui.g)&&(!q||e.n.toLowerCase().includes(q)));
@@ -360,18 +541,6 @@ function vPro(){
  <div class="row sp"><div><div class="big num">${fk(cur)}<span class="mut" style="font-size:18px"> ${metric==='reps'?'reps':'kg'}</span></div><div class="mut xs">${metric==='reps'?'mejor serie':metric==='rm'?'1RM estimado actual':'último peso máximo'}</div></div>${pts.length>1?`<span class="chip" style="--c:${cur>=first?'var(--ok)':'var(--warn)'}">${cur-first>0?'+':''}${fk(cur-first)} desde el inicio</span>`:''}</div>${lineChart(pts)}<div class="mut xs">${pts.length} sesiones registradas</div></div>
  <div class="card"><div class="lbl">Entrenos por semana</div><div class="row" style="align-items:flex-end;height:90px;gap:8px">${wk.map(w=>`<div class="grow" style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:flex-end;height:100%"><span class="xs num">${w.n}</span><div style="width:100%;height:${w.n/mx*60}px;min-height:3px;background:var(--me);border-radius:4px"></div><span class="mut" style="font-size:10px">${w.l}</span></div>`).join('')}</div></div>
  <div class="card"><div class="lbl">Récords recientes</div>${prs.length?prs.map(p=>`<div class="row sp"><span class="ell">${esc(X(p.ex).n)}</span><span class="num"><b>${fk(p.kg)} kg</b> <span class="mut xs">${fd(p.date)}</span></span></div>`).join(''):'<div class="mut sm-t">Todavía no hay récords nuevos.</div>'}</div>`;
-}
-
-function vPar(){
- if(!ui.cal){const n=new Date();ui.cal={y:n.getFullYear(),m:n.getMonth()}}
- const {y,m}=ui.cal,first=new Date(y,m,1),nd=new Date(y,m+1,0).getDate(),off=dow(first),td=todayISO();
- const person=k=>{const u=S.u[k],ws=weekStats(k),l=u.logs[u.logs.length-1],wv=weekDates().reduce((a,d)=>{const g=logOn(k,iso(d));return a+(g?vol(g):0)},0);
-  return`<div class="card"><div class="row sp"><div class="row"><span class="av" style="width:34px;height:34px;font-size:16px;border-color:${col(k)};color:${col(k)}">${esc(u.name[0])}</span><b>${esc(u.name)}</b></div><span class="chip" style="--c:${col(k)}">racha ${streak(k)}</span></div><div class="row sp sm-t"><span>${ws.done} de ${ws.plan} entrenos esta semana</span><span class="mut num">${Math.round(wv).toLocaleString('es-AR')} kg</span></div><div class="bar" style="--c:${col(k)}"><i style="width:${ws.plan?Math.min(100,ws.done/ws.plan*100):0}%"></i></div>${l?`<div class="mut xs">Último: ${l.b.map(b=>esc(b.name)).join(' + ')} · ${fd(l.date,{weekday:'long',day:'numeric'})}</div>`:''}</div>`};
- let cells=D1.map(d=>`<button class="h" disabled>${d}</button>`).join('')+'<span></span>'.repeat(off);
- for(let d=1;d<=nd;d++){const k=y+'-'+pad(m+1)+'-'+pad(d);cells+=`<button class="${k===td?'td':''}" data-a="day" data-d="${k}">${d}<span class="dots">${['t','s'].map(w=>logOn(w,k)?`<i style="background:${col(w)}"></i>`:'').join('')}</span></button>`}
- const feed=[...prEvents('t'),...prEvents('s')].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
- return person('t')+person('s')+`<div class="card"><div class="row sp"><button class="ic" data-a="calm" data-d="-1" aria-label="Mes anterior">${ic('back','s')}</button><b style="text-transform:capitalize">${first.toLocaleDateString('es-AR',{month:'long',year:'numeric'})}</b><button class="ic" data-a="calm" data-d="1" aria-label="Mes siguiente">${ic('next','s')}</button></div><div class="cal">${cells}</div><div class="row xs mut"><span class="dots"><i style="background:var(--ct)"></i></span>${esc(S.u.t.name)}<span class="dots"><i style="background:var(--cs)"></i></span>${esc(S.u.s.name)}</div></div>
- <div class="card"><div class="lbl">Últimos récords</div>${feed.map(p=>`<div class="row sp"><span class="ell"><b style="color:${col(p.k)}">${esc(S.u[p.k].name)}</b> · ${esc(X(p.ex).n)}</span><span class="num">${fk(p.kg)} kg</span></div>`).join('')||'<div class="mut sm-t">Todavía no hay récords.</div>'}</div>`;
 }
 
 function renderFull(){
@@ -419,9 +588,11 @@ function tick(){
  if(d.restEnd){const left=Math.ceil((d.restEnd-Date.now())/1000);if(left<=0){d.restEnd=0;beep();r.hidden=true;toast('Terminó el descanso');save()}else{r.hidden=false;$('#rt').textContent=pad(Math.floor(left/60))+':'+pad(left%60)}}else r.hidden=true;
 }
 setInterval(tick,400);document.addEventListener('visibilitychange',tick);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&cloud.perfil){syncNow();if(ui.tab==='par'&&ui.gv)loadGroup(ui.gv.gid);else loadGroups()}});
+window.addEventListener('online',()=>{if(cloud.perfil)syncNow()});
 
 function vSetup(){
- return`<div class="fh"><h2>Bienvenidos</h2></div><div class="fb"><div class="card"><div class="lbl">Cuenta de pareja</div><div class="mut sm-t">Una sola cuenta para los dos. Cada uno tiene su perfil, sus bloques y su progreso.</div><input id="su1" style="width:100%;box-sizing:border-box" placeholder="Tu nombre" maxlength="12" autocomplete="off"><input id="su2" style="width:100%;box-sizing:border-box" placeholder="Nombre de tu pareja" maxlength="12" autocomplete="off"></div><div class="mut xs">La app arranca vacía. Los ejercicios del catálogo ya están cargados y podés agregar los tuyos desde Bloques, en Ejercicios.</div><button class="btn" data-a="setup">Empezar</button></div>`;
+ return`<div class="fh"><h2>Bienvenidos</h2></div><div class="fb"><div class="card"><div class="lbl">Tu perfil</div><div class="mut sm-t">Tus bloques, plan y entrenos son tuyos. Más adelante podés crear una cuenta y armar grupos con otras personas para compartir lo que vos elijas.</div><input id="su1" placeholder="Tu nombre" maxlength="24" autocomplete="off"></div><div class="mut xs">La app arranca vacía. Los ejercicios del catálogo ya están cargados y podés agregar los tuyos desde Bloques, en Ejercicios.</div><button class="btn" data-a="setup">Empezar</button></div>`;
 }
 
 function vSum(){
@@ -451,15 +622,14 @@ function vEdit(){
 function sheet(html){return`<div class="scrim" data-a="sclose"></div><div class="sheet" role="dialog"><div class="grab"></div>${html}</div>`}
 function renderSheet(){
  const s=ui.sheet,el=$('#sh');if(!s){el.innerHTML='';return}const u=U();let h='';
- if(s.t==='user')h=`<h2>Perfil</h2><div class="seg">${['t','s'].map(k=>`<button data-a="who" data-k="${k}" class="${S.me===k?'on':''}">${esc(S.u[k].name)}</button>`).join('')}</div><div class="lbl">Nombres</div><div class="row"><input id="nt" value="${esc(S.u.t.name)}" maxlength="12"><input id="ns" value="${esc(S.u.s.name)}" maxlength="12"></div><button class="btn g" data-a="names">Guardar nombres</button><button class="btn bad" data-a="wipe">${ui.arm==='wipe'?'Tocá de nuevo para borrar TODO':'Limpiar todo y empezar de cero'}</button><div class="mut xs">Borra bloques, plan, entrenamientos, peso y fotos de los dos y vuelve a la pantalla de registro. Los ejercicios del catálogo se conservan.</div>`;
  if(s.t==='chip'){const b=u.blocks.find(x=>x.id===s.b);h=`<div class="row"><div class="code" style="--c:${b.c}">${esc(b.code)}</div><div class="grow"><h2>${esc(b.name)}</h2><div class="mut xs">${DAYS[s.d]} · ${b.items.length} ejercicios</div></div></div><div class="lbl">Mover a</div><div class="row wr">${D1.map((l,i)=>`<button class="btn g sm" style="min-width:42px" ${i==s.d?'disabled':''} data-a="moveb" data-to="${i}">${l}</button>`).join('')}</div><div class="lbl">También agregar a</div><div class="row wr">${D1.map((l,i)=>`<button class="btn g sm" style="min-width:42px" ${u.plan[i].includes(b.id)?'disabled':''} data-a="alsob" data-to="${i}">${l}</button>`).join('')}</div><button class="btn g" data-a="editb" data-b="${b.id}">Editar bloque</button><button class="btn bad" data-a="rmb">Quitar del ${DAYS[s.d].toLowerCase()}</button>`}
  if(s.t==='addday')h=`<h2>Agregar al ${DAYS[s.d].toLowerCase()}</h2>${u.blocks.map(b=>{const has=u.plan[s.d].includes(b.id);return`<button class="ex" ${has?'disabled':''} data-a="adddayb" data-b="${b.id}"><span class="code" style="--c:${b.c}">${esc(b.code)}</span><div class="grow"><div>${esc(b.name)}</div><div class="mut xs">${b.items.length} ejercicios</div></div>${has?'<span class="mut xs">Ya está</span>':''}</button>`}).join('')}<button class="btn g" data-a="newb">${ic('plus','s')} Crear bloque nuevo</button>`;
  if(s.t==='startpick')h=`<h2>¿Qué entrenás?</h2>${u.blocks.map(b=>`<button class="ex" data-a="stog" data-b="${b.id}"><span class="code" style="--c:${b.c}">${esc(b.code)}</span><div class="grow"><div>${esc(b.name)}</div><div class="mut xs">${b.items.length} ejercicios · ${blockMin(b)} min</div></div><span class="chk ${s.sel.includes(b.id)?'on':''}" style="width:34px;height:34px">${s.sel.includes(b.id)?ic('check','s'):''}</span></button>`).join('')}<button class="btn" data-a="gostart">Empezar (${s.sel.length})</button>`;
  if(s.t==='pick')h=`<h2>Agregar ejercicios</h2><input id="q" placeholder="Buscar ejercicio" value="${esc(ui.q)}" data-in="q" autocomplete="off"><div class="chips">${['',...GROUPS].map(g=>`<button class="chip ${ui.g===g?'sel':''}" data-a="grp" data-g="${g}">${g||'Todos'}</button>`).join('')}</div><div id="exl">${exList('pick')}</div><button class="btn" data-a="pdone">Listo (${ui.pick.sel.length})</button>`;
- if(s.t==='exinfo'){const x=X(s.x),ls=lastSets(S.me,x.id),lo=lastSets(OK(),x.id);h=`<h2>${esc(x.n)}</h2><div class="mut">${x.g} · ${x.eq}</div><div class="row"><div class="stat"><div class="big num">${fk(bestKg(S.me,x.id))}<span class="mut" style="font-size:16px"> kg</span></div><div class="mut xs">tu máximo</div></div><div class="stat"><div class="big num">${fk(bestKg(OK(),x.id))}<span class="mut" style="font-size:16px"> kg</span></div><div class="mut xs">máximo de ${esc(O().name)}</div></div></div><div class="mut sm-t">${ls?'Tu última vez: '+ls.map(s=>s.reps+'×'+fk(s.kg)).join(' · '):'Todavía no lo hiciste.'}</div><button class="btn ${(u.fixed||[]).includes(x.id)?'':'g'}" data-a="fixtog" data-x="${x.id}">${(u.fixed||[]).includes(x.id)?'★ Fijo en todos mis entrenos (tocá para quitar)':'☆ Hacer siempre en todos mis entrenos'}</button>`}
+ if(s.t==='exinfo'){const x=X(s.x),ls=lastSets(S.me,x.id),h=`<h2>${esc(x.n)}</h2><div class="mut">${x.g} · ${x.eq}</div><div class="row"><div class="stat"><div class="big num">${fk(bestKg(S.me,x.id))}<span class="mut" style="font-size:16px"> kg</span></div><div class="mut xs">tu máximo</div></div></div><div class="mut sm-t">${ls?'Tu última vez: '+ls.map(s=>s.reps+'×'+fk(s.kg)).join(' · '):'Todavía no lo hiciste.'}</div><button class="btn ${(u.fixed||[]).includes(x.id)?'':'g'}" data-a="fixtog" data-x="${x.id}">${(u.fixed||[]).includes(x.id)?'★ Fijo en todos mis entrenos (tocá para quitar)':'☆ Hacer siempre en todos mis entrenos'}</button>`}
  if(s.t==='newex')h=`<h2>Nuevo ejercicio</h2><input id="nxn" placeholder="Nombre del ejercicio"><select id="nxg">${GROUPS.map(g=>`<option>${g}</option>`).join('')}</select><select id="nxe">${EQUIP.map(g=>`<option>${g}</option>`).join('')}</select><button class="btn" data-a="savex">Guardar ejercicio</button>`;
  if(s.t==='photo'){const p=u.photos[s.i];h=`<div class="mut">${fd(p.date,{day:'numeric',month:'long',year:'numeric'})}</div><img src="${p.d}" alt="Foto de progreso" style="width:100%;max-height:60vh;object-fit:contain;border-radius:12px"><button class="btn bad" data-a="delphoto">Borrar foto</button>`}
- if(s.t==='day'){const rows=['t','s'].map(k=>{const l=logOn(k,s.date);return l?`<div class="card"><b style="color:${col(k)}">${esc(S.u[k].name)}</b><div>${l.b.map(b=>esc(b.name)).join(' + ')}</div><div class="mut xs">${l.min} min · ${Math.round(vol(l)).toLocaleString('es-AR')} kg · ${l.entries.length} ejercicios</div></div>`:''}).join('');h=`<h2>${fd(s.date,{weekday:'long',day:'numeric',month:'long'})}</h2>${rows||'<div class="mut">Nadie entrenó este día.</div>'}`}
+ if(s.t==='day'){h=dayRows(s.date)}
  if(s.t==='quit')h=`<h2>¿Salir del entrenamiento?</h2><button class="btn" data-a="sclose">Seguir entrenando</button><button class="btn g" data-a="pause">Salir y continuar después</button><button class="btn bad" data-a="discard">Descartar entrenamiento</button>`;
  if(s.t==='discard')h=`<h2>No marcaste ninguna serie</h2><div class="mut">Si terminás ahora no se guarda nada.</div><button class="btn" data-a="sclose">Seguir entrenando</button><button class="btn bad" data-a="discard">Descartar</button>`;
  el.innerHTML=sheet(h);
@@ -474,7 +644,7 @@ document.addEventListener('click',ev=>{
  const t=ev.target.closest('[data-a]');if(!t||t.disabled)return;const a=t.dataset.a,d=t.dataset,u=U(),dr=S.draft;
  const R=(k=true)=>{render(k)};
  switch(a){
- case'tab':ui.tab=d.t;ui.sheet=null;R(false);break;
+ case'tab':ui.tab=d.t;ui.sheet=null;if(d.t==='par'){ui.gv=null;ui.arm=null;loadGroups()}R(false);break;
  case'login':cAuth('in');break;
  case'signup':cAuth('up');break;
  case'forgot':cForgot();break;
@@ -487,10 +657,32 @@ document.addEventListener('click',ev=>{
  case'ppreset':cPriv('_preset',d.all==='1');break;
  case'avquit':cAvQuit();break;
  case'pclose':ui.full=null;render();break;
- case'logout':(async()=>{try{await sb.auth.signOut()}catch(e){}cloud.session=null;cloud.perfil=null;cloud.err='';cloud.nickIn='';cloud.avTmp=null;if(ui.full==='alta')ui.full=null;render()})();break;
+ case'logout':(async()=>{
+  if(cloud.perfil&&S.linkedUid&&sync.state!=='ok'&&ui.arm!=='logout'){await syncNow();if(sync.state!=='ok'){ui.arm='logout';render();toast('Hay cambios sin enviar a la nube. Tocá otra vez para cerrar sesión igual.');return}}
+  ui.arm=null;const vinculado=!!S.linkedUid;
+  try{await sb.auth.signOut()}catch(e){}
+  cloud.session=null;cloud.perfil=null;cloud.err='';cloud.nickIn='';cloud.avTmp=null;sync.state='local';G.list=[];G.invs=[];G.mem={};G.data={};G.sent={};G.loaded=false;ui.gv=null;
+  if(vinculado){wipeLocal();save(false)}
+  if(ui.full==='alta'||ui.full==='perfil')ui.full=null;render()})();break;
+ case'syncnow':(async()=>{await syncNow();toast(sync.state==='ok'?'Todo al día':'No se pudo sincronizar')})();break;
+ case'gopen':ui.gv={gid:d.g,seg:'res'};ui.arm=null;ui.gerr='';loadGroup(d.g);break;
+ case'gback':ui.gv=null;ui.arm=null;loadGroups();break;
+ case'gseg':ui.gv.seg=d.s;ui.arm=null;ui.gerr='';R();break;
+ case'gperson':ui.gv.person=d.u;ui.gv.pseg='est';ui.gv.pex=null;R(false);break;
+ case'gpback':ui.gv.person=null;R();break;
+ case'gpseg':ui.gv.pseg=d.s;R();break;
+ case'grefresh':if(ui.gv)loadGroup(ui.gv.gid);else loadGroups();break;
+ case'gnew':(async()=>{const n=($('#gnom').value||'').trim();if(!n){toast('Escribí un nombre');return}const r=await rpc('crear_grupo',{p_nombre:n});if(r.error){toast(gErr(r.error));return}await loadGroups();ui.gv={gid:r.data,seg:'aju'};loadGroup(r.data);toast('Grupo creado')})();break;
+ case'ginv':(async()=>{const r=await rpc('responder_invitacion',{inv:d.i,aceptar:d.ok==='1'});toast(r.error?gErr(r.error):(d.ok==='1'?'Entraste al grupo':'Invitación rechazada'));await loadGroups()})();break;
+ case'ginvitar':(async()=>{const n=($('#gin').value||'').trim().replace(/^@/,'');if(!n){ui.gerr='Escribí un nick.';R();return}const r=await rpc('invitar',{g:ui.gv.gid,p_nick:n});if(r.error){ui.gerr=gErr(r.error);R();return}ui.gerr='';ui.gv.seg='mie';await loadGroup(ui.gv.gid);toast('Invitación enviada a @'+n.toLowerCase())})();break;
+ case'gcancel':(async()=>{const r=await rpc('cancelar_invitacion',{inv:d.i});if(r.error)toast(gErr(r.error));await loadGroup(ui.gv.gid)})();break;
+ case'gquitar':if(ui.arm!=='q'+d.u){ui.arm='q'+d.u;R();break}(async()=>{ui.arm=null;const r=await rpc('quitar_miembro',{g:ui.gv.gid,u:d.u});if(r.error)toast(gErr(r.error));else toast('Eliminado del grupo');await loadGroup(ui.gv.gid)})();break;
+ case'grename':(async()=>{const r=await rpc('renombrar_grupo',{g:ui.gv.gid,p_nombre:$('#grn').value});if(r.error){toast(gErr(r.error));return}toast('Nombre guardado');await loadGroups();loadGroup(ui.gv.gid)})();break;
+ case'gdel':if(ui.arm!=='gdel'){ui.arm='gdel';R();break}(async()=>{ui.arm=null;const r=await rpc('eliminar_grupo',{g:ui.gv.gid});if(r.error){toast(gErr(r.error));return}ui.gv=null;toast('Grupo eliminado');await loadGroups()})();break;
+ case'gsalir':if(ui.arm!=='gsalir'){ui.arm='gsalir';R();break}(async()=>{ui.arm=null;const r=await rpc('salir_grupo',{g:ui.gv.gid});if(r.error){toast(gErr(r.error));return}ui.gv=null;toast('Saliste del grupo');await loadGroups()})();break;
+ case'gcopy':{const m=(G.mem[ui.gv.gid]||[]).find(x=>x.user_id===ui.gv.person),v=m&&mv(m);if(v&&v.blocks[+d.i]){copyBlock(v.blocks[+d.i],v);R()}}break;
  case'user':ui.full='perfil';ui.sheet=null;ui.arm=null;render(false);break;
- case'who':S.me=d.k;ui.sheet=null;ui.progEx=null;save();R(false);break;
- case'names':S.u.t.name=$('#nt').value.trim()||S.u.t.name;S.u.s.name=$('#ns').value.trim()||S.u.s.name;ui.sheet=null;save();R();toast('Nombres guardados');break;
+ case'names':S.u.t.name=$('#nt').value.trim()||S.u.t.name;ui.sheet=null;save();R();toast('Nombre guardado');break;
  case'sclose':ui.sheet=null;R();break;
  case'start':startWork(u.plan[dow(new Date())],S.me);break;
  case'resume':unlockAudio();ui.full='work';R(false);break;
@@ -508,7 +700,6 @@ document.addEventListener('click',ev=>{
  case'grp':ui.g=d.g;if(ui.sheet&&ui.sheet.t==='pick')R();else R();break;
  case'newb':ui.edit=newBlock();ui.full='edit';ui.sheet=null;R(false);break;
  case'editb':{const b=u.blocks.find(x=>x.id===d.b);ui.edit=JSON.parse(JSON.stringify(b));ui.full='edit';ui.sheet=null;ui.arm=null;R(false)}break;
- case'copyb':{const b=JSON.parse(JSON.stringify(O().blocks.find(x=>x.id===d.b)));b.id=S.me+uid();const used=u.blocks.map(x=>x.code);if(used.includes(b.code))b.code=[...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].find(c=>!used.includes(c))||b.code;u.blocks.push(b);save();R();toast('Bloque copiado a tus bloques')}break;
  case'eclose':ui.full=null;ui.edit=null;R();break;
  case'ecolor':ui.edit.c=d.c;R();break;
  case'esave':{const b=ui.edit;b.name=($('#ename').value||'').trim()||'Sin nombre';b.code=($('#ecode').value||'').trim().toUpperCase()||'?';
@@ -524,8 +715,10 @@ document.addEventListener('click',ev=>{
  case'pdone':ui.pick.sel.forEach(id=>{const x=X(id);ui.edit.items.push({ex:id,sets:3,reps:'10-12',rest:defRest(x)})});ui.sheet=null;R();break;
  case'edelb':if(ui.arm==='delb'){const id=ui.edit.id;u.blocks=u.blocks.filter(b=>b.id!==id);for(let i=0;i<7;i++)u.plan[i]=u.plan[i].filter(x=>x!==id);ui.arm=null;ui.full=null;ui.edit=null;save();R();toast('Bloque eliminado')}else{ui.arm='delb';R()}break;
  case'exinfo':ui.sheet={t:'exinfo',x:d.x};R();break;
- case'setup':{const a=$('#su1').value.trim(),b=$('#su2').value.trim();if(!a||!b){toast('Escribí los dos nombres');break}S.u.t.name=a;S.u.s.name=b;S.setup=true;S.me='t';ui.full=null;ui.tab='hoy';save();R(false)}break;
- case'wipe':if(ui.arm==='wipe'){S=emptyState();ui.arm=null;ui.sheet=null;ui.progEx=null;ui.tab='hoy';ui.full='setup';save();R(false)}else{ui.arm='wipe';R()}break;
+ case'setup':{const a=$('#su1').value.trim();if(!a){toast('Escribí tu nombre');break}S.u.t.name=a;S.setup=true;S.me='t';ui.full=null;ui.tab='hoy';save();R(false)}break;
+ case'wipe':if(ui.arm==='wipe'){(async()=>{const uid=cloud.perfil&&cloud.session?cloud.session.user.id:null;const nm=S.u.t.name;S=emptyState();S.u.t.name=nm;ui.arm=null;ui.sheet=null;ui.progEx=null;ui.tab='hoy';ui.full='setup';lastDocStr=docStr();save(false);
+  if(uid){S.mt=Date.now();try{await pushDoc(uid);sync.state='ok'}catch(e){sync.state='error';toast('Se borró acá, pero no se pudo borrar en la nube. Probá "Sincronizar ahora".')}}
+  R(false)})()}else{ui.arm='wipe';R()}break;
  case'newex':ui.sheet={t:'newex'};R();break;
  case'fixtog':{u.fixed=u.fixed||[];const i=u.fixed.indexOf(d.x);i<0?u.fixed.push(d.x):u.fixed.splice(i,1);save();R();toast(i<0?'Ahora es fijo en tus entrenos':'Ya no es fijo')}break;
  case'savex':{const n=$('#nxn').value.trim();if(!n){toast('Escribí el nombre');break}S.ex.push({id:'e'+uid(),n,g:$('#nxg').value,eq:$('#nxe').value});save();ui.sheet=null;R();toast('Ejercicio agregado')}break;
@@ -561,11 +754,13 @@ document.addEventListener('input',ev=>{
 document.addEventListener('change',ev=>{
  const t=ev.target,a=t.dataset.in;
  if(a==='pe'){ui.progEx=t.value;render()}
+ if(a==='gpe'&&ui.gv){ui.gv.pex=t.value;render()}
  if(a==='avatar'&&t.files[0]){avatarPick(t.files[0]);t.value=''}
  if(a==='photo'&&t.files[0]){const f=t.files[0],r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*sc;c.height=im.height*sc;c.getContext('2d').drawImage(im,0,0,c.width,c.height);U().photos.push({date:todayISO(),d:c.toDataURL('image/jpeg',.7)});save();render();toast('Foto guardada')};im.src=r.result};r.readAsDataURL(f)}
 });
 if(S.draft)ui.full=null;
 if(!S.setup)ui.full='setup';
+lastDocStr=docStr();
 render(false);
 cloudInit();
 

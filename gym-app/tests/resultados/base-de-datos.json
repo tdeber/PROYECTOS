@@ -1,0 +1,478 @@
+{
+ "suite": "base-de-datos",
+ "fecha": "2026-10-09T23:35:30.517Z",
+ "total": 67,
+ "ok": 67,
+ "fallas": 0,
+ "pruebas": [
+  {
+   "id": "DB-01",
+   "seccion": "Acceso anonimo",
+   "desc": "Sin sesion no se puede leer perfiles",
+   "ok": true,
+   "ms": 7
+  },
+  {
+   "id": "DB-02",
+   "seccion": "Acceso anonimo",
+   "desc": "Sin sesion no se puede leer datos",
+   "ok": true,
+   "ms": 9
+  },
+  {
+   "id": "DB-03",
+   "seccion": "Acceso anonimo",
+   "desc": "Sin sesion no se puede leer grupos, miembros ni invitaciones",
+   "ok": true,
+   "ms": 15
+  },
+  {
+   "id": "DB-04",
+   "seccion": "Acceso anonimo",
+   "desc": "Sin sesion no se puede ejecutar ninguna funcion",
+   "ok": true,
+   "ms": 19
+  },
+  {
+   "id": "DB-10",
+   "seccion": "Perfiles",
+   "desc": "Cada persona ve solo su propio perfil",
+   "ok": true,
+   "ms": 4
+  },
+  {
+   "id": "DB-11",
+   "seccion": "Perfiles",
+   "desc": "No se puede crear un perfil a nombre de otra persona",
+   "ok": true,
+   "ms": 3
+  },
+  {
+   "id": "DB-12",
+   "seccion": "Perfiles",
+   "desc": "No se puede editar el perfil de otra persona (0 filas afectadas)",
+   "ok": true,
+   "ms": 8
+  },
+  {
+   "id": "DB-13",
+   "seccion": "Perfiles",
+   "desc": "El nick es unico sin importar mayusculas",
+   "ok": true,
+   "ms": 3
+  },
+  {
+   "id": "DB-14",
+   "seccion": "Perfiles",
+   "desc": "El nick solo acepta minusculas, numeros y guion bajo (3 a 20)",
+   "ok": true,
+   "ms": 18
+  },
+  {
+   "id": "DB-15",
+   "seccion": "Perfiles",
+   "desc": "El nombre no puede estar vacio ni pasar de 24 caracteres",
+   "ok": true,
+   "ms": 5
+  },
+  {
+   "id": "DB-16",
+   "seccion": "Perfiles",
+   "desc": "La foto de perfil tiene tope de tamano",
+   "ok": true,
+   "ms": 6
+  },
+  {
+   "id": "DB-17",
+   "seccion": "Perfiles",
+   "desc": "La privacidad debe ser un objeto chico",
+   "ok": true,
+   "ms": 6
+  },
+  {
+   "id": "DB-18",
+   "seccion": "Perfiles",
+   "desc": "nick_disponible distingue libres, tomados y el propio",
+   "ok": true,
+   "ms": 13
+  },
+  {
+   "id": "DB-19",
+   "seccion": "Perfiles",
+   "desc": "Al cambiar de nick el anterior queda libre",
+   "ok": true,
+   "ms": 10
+  },
+  {
+   "id": "DB-20",
+   "seccion": "Perfiles",
+   "desc": "No se puede cambiar a un nick tomado",
+   "ok": true,
+   "ms": 4
+  },
+  {
+   "id": "DB-30",
+   "seccion": "Datos propios",
+   "desc": "Cada persona guarda y lee sus datos",
+   "ok": true,
+   "ms": 9
+  },
+  {
+   "id": "DB-31",
+   "seccion": "Datos propios",
+   "desc": "No se pueden leer los datos de otra persona",
+   "ok": true,
+   "ms": 3
+  },
+  {
+   "id": "DB-32",
+   "seccion": "Datos propios",
+   "desc": "No se pueden escribir datos a nombre de otra persona",
+   "ok": true,
+   "ms": 2
+  },
+  {
+   "id": "DB-33",
+   "seccion": "Datos propios",
+   "desc": "No se pueden modificar los datos de otra persona",
+   "ok": true,
+   "ms": 4
+  },
+  {
+   "id": "DB-34",
+   "seccion": "Datos propios",
+   "desc": "Se puede actualizar el propio dato (upsert)",
+   "ok": true,
+   "ms": 7
+  },
+  {
+   "id": "DB-35",
+   "seccion": "Datos propios",
+   "desc": "Los datos tienen tope de tamano",
+   "ok": true,
+   "ms": 92
+  },
+  {
+   "id": "DB-40",
+   "seccion": "Acceso directo a grupos",
+   "desc": "Con sesion tampoco se pueden leer ni escribir las tablas de grupos directo",
+   "ok": true,
+   "ms": 18
+  },
+  {
+   "id": "DB-50",
+   "seccion": "Grupos",
+   "desc": "Crear un grupo: quien lo crea queda como miembro y creador",
+   "ok": true,
+   "ms": 20
+  },
+  {
+   "id": "DB-51",
+   "seccion": "Grupos",
+   "desc": "Hace falta tener perfil para crear un grupo",
+   "ok": true,
+   "ms": 3
+  },
+  {
+   "id": "DB-52",
+   "seccion": "Grupos",
+   "desc": "El nombre del grupo no puede estar vacio ni pasar de 30",
+   "ok": true,
+   "ms": 5
+  },
+  {
+   "id": "DB-53",
+   "seccion": "Grupos",
+   "desc": "Maximo 10 grupos creados por persona",
+   "ok": true,
+   "ms": 82
+  },
+  {
+   "id": "DB-54",
+   "seccion": "Grupos",
+   "desc": "Quien no esta en un grupo no lo ve",
+   "ok": true,
+   "ms": 2
+  },
+  {
+   "id": "DB-55",
+   "seccion": "Grupos",
+   "desc": "Solo el creador puede renombrar el grupo",
+   "ok": true,
+   "ms": 13
+  },
+  {
+   "id": "DB-60",
+   "seccion": "Invitaciones",
+   "desc": "Solo el creador puede invitar",
+   "ok": true,
+   "ms": 6
+  },
+  {
+   "id": "DB-61",
+   "seccion": "Invitaciones",
+   "desc": "Invitar a un nick que no existe",
+   "ok": true,
+   "ms": 3
+  },
+  {
+   "id": "DB-62",
+   "seccion": "Invitaciones",
+   "desc": "No se puede invitar a uno mismo",
+   "ok": true,
+   "ms": 4
+  },
+  {
+   "id": "DB-63",
+   "seccion": "Invitaciones",
+   "desc": "Invitar por nick funciona aunque cambien las mayusculas",
+   "ok": true,
+   "ms": 10
+  },
+  {
+   "id": "DB-64",
+   "seccion": "Invitaciones",
+   "desc": "No se puede invitar dos veces a la misma persona",
+   "ok": true,
+   "ms": 6
+  },
+  {
+   "id": "DB-65",
+   "seccion": "Invitaciones",
+   "desc": "La invitacion la ve solo quien la recibe",
+   "ok": true,
+   "ms": 14
+  },
+  {
+   "id": "DB-66",
+   "seccion": "Invitaciones",
+   "desc": "Solo el creador ve las invitaciones enviadas",
+   "ok": true,
+   "ms": 4
+  },
+  {
+   "id": "DB-67",
+   "seccion": "Invitaciones",
+   "desc": "Otra persona no puede aceptar ni rechazar una invitacion ajena",
+   "ok": true,
+   "ms": 9
+  },
+  {
+   "id": "DB-68",
+   "seccion": "Invitaciones",
+   "desc": "Cancelar: solo la puede cancelar quien envio",
+   "ok": true,
+   "ms": 15
+  },
+  {
+   "id": "DB-69",
+   "seccion": "Invitaciones",
+   "desc": "Rechazar una invitacion",
+   "ok": true,
+   "ms": 15
+  },
+  {
+   "id": "DB-70",
+   "seccion": "Invitaciones",
+   "desc": "Despues de rechazar, se puede volver a invitar",
+   "ok": true,
+   "ms": 4
+  },
+  {
+   "id": "DB-71",
+   "seccion": "Invitaciones",
+   "desc": "Aceptar la invitacion: entra al grupo",
+   "ok": true,
+   "ms": 11
+  },
+  {
+   "id": "DB-72",
+   "seccion": "Invitaciones",
+   "desc": "No se puede invitar a quien ya es miembro",
+   "ok": true,
+   "ms": 3
+  },
+  {
+   "id": "DB-73",
+   "seccion": "Invitaciones",
+   "desc": "Limite de 20 personas por grupo (miembros + invitaciones pendientes)",
+   "ok": true,
+   "ms": 100
+  },
+  {
+   "id": "DB-80",
+   "seccion": "Miembros",
+   "desc": "Un miembro ve la lista de miembros con nick, nombre y creador primero",
+   "ok": true,
+   "ms": 6
+  },
+  {
+   "id": "DB-81",
+   "seccion": "Miembros",
+   "desc": "Quien no es miembro no ve la lista",
+   "ok": true,
+   "ms": 2
+  },
+  {
+   "id": "DB-82",
+   "seccion": "Miembros",
+   "desc": "Solo el creador puede quitar miembros",
+   "ok": true,
+   "ms": 6
+  },
+  {
+   "id": "DB-83",
+   "seccion": "Miembros",
+   "desc": "El creador no puede sacarse a si mismo ni salir",
+   "ok": true,
+   "ms": 6
+  },
+  {
+   "id": "DB-84",
+   "seccion": "Miembros",
+   "desc": "Un miembro puede salir del grupo",
+   "ok": true,
+   "ms": 16
+  },
+  {
+   "id": "DB-85",
+   "seccion": "Miembros",
+   "desc": "El creador puede sacar a un miembro",
+   "ok": true,
+   "ms": 18
+  },
+  {
+   "id": "DB-90",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Quien no comparte grupo no puede ver datos",
+   "ok": true,
+   "ms": 6
+  },
+  {
+   "id": "DB-91",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Sin sesion no se puede ver_datos",
+   "ok": true,
+   "ms": 3
+  },
+  {
+   "id": "DB-92",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Con todo apagado el miembro no recibe nada de la persona",
+   "ok": true,
+   "ms": 11
+  },
+  {
+   "id": "DB-93",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Solo \"entrenos\": ve fechas, bloques y cantidad de series, sin kilos ni repeticiones",
+   "ok": true,
+   "ms": 8
+  },
+  {
+   "id": "DB-94",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "\"estadisticas\" entrega los entrenos completos y los nombres de ejercicios",
+   "ok": true,
+   "ms": 8
+  },
+  {
+   "id": "DB-95",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "\"plan\" muestra los dias y los nombres de bloques, sin ejercicios",
+   "ok": true,
+   "ms": 7
+  },
+  {
+   "id": "DB-96",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "\"bloques\" muestra series, repeticiones y descansos",
+   "ok": true,
+   "ms": 6
+  },
+  {
+   "id": "DB-97",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "\"peso\" muestra el peso corporal y nada mas",
+   "ok": true,
+   "ms": 6
+  },
+  {
+   "id": "DB-98",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Cada persona se ve completa a si misma, sin importar su privacidad",
+   "ok": true,
+   "ms": 5
+  },
+  {
+   "id": "DB-99",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Cambiar la privacidad se nota enseguida",
+   "ok": true,
+   "ms": 12
+  },
+  {
+   "id": "DB-100",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Una persona sin datos cargados devuelve \"vacio\"",
+   "ok": true,
+   "ms": 13
+  },
+  {
+   "id": "DB-101",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Datos mal formados no rompen la vista de los demas: se devuelven listas vacias",
+   "ok": true,
+   "ms": 7
+  },
+  {
+   "id": "DB-101b",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Entrenos con forma rota dentro de la lista tampoco rompen nada (devuelve error controlado)",
+   "ok": true,
+   "ms": 17
+  },
+  {
+   "id": "DB-102",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Un miembro no puede leer la tabla de datos de otro, aunque comparta grupo",
+   "ok": true,
+   "ms": 3
+  },
+  {
+   "id": "DB-103",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Al salir del grupo se pierde el acceso a los datos",
+   "ok": true,
+   "ms": 8
+  },
+  {
+   "id": "DB-104",
+   "seccion": "Privacidad de lo que ven los demas",
+   "desc": "Dos grupos distintos: se ve a quien comparte AL MENOS un grupo",
+   "ok": true,
+   "ms": 21
+  },
+  {
+   "id": "DB-110",
+   "seccion": "Borrado y limpieza",
+   "desc": "Eliminar un grupo: solo el creador, y se borran miembros e invitaciones",
+   "ok": true,
+   "ms": 10
+  },
+  {
+   "id": "DB-111",
+   "seccion": "Borrado y limpieza",
+   "desc": "Borrar una cuenta borra su perfil, datos, membresias e invitaciones",
+   "ok": true,
+   "ms": 3
+  },
+  {
+   "id": "DB-112",
+   "seccion": "Borrado y limpieza",
+   "desc": "Los scripts se pueden correr de nuevo sin perder datos",
+   "ok": true,
+   "ms": 19
+  }
+ ]
+}
