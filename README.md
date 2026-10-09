@@ -1,5 +1,9 @@
 # PROYECTOS
 
-Mis proyectos, cada uno en su carpeta.
+Proyectos personales, cada uno en su carpeta.
 
-- `gym-app/` — app de gimnasio para dos (PWA). Se abre en https://tdeber.github.io/PROYECTOS/gym-app/
+| Carpeta | Qué es |
+| --- | --- |
+| [`gym-app/`](gym-app/README.md) | App web de entrenamiento para grupos chicos (PWA). Se publica con GitHub Pages. |
+
+Este repositorio es público. No contiene datos personales: cada proyecto guarda los datos de sus usuarios fuera del código.
