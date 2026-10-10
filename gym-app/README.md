@@ -72,9 +72,16 @@ Ideas acordadas, todavía sin hacer:
 
 ## Historial de cambios
 
-### Sin publicar
-- Pestaña Guías con 46 ejercicios, ficha completa, versiones por máquina y atajo **?** durante el entrenamiento.
-- Arreglo de maquetación: los campos de texto ya no se salen de su tarjeta y los filtros no se aplastan en listas largas.
+### Pendiente: guía de ejercicios
+La guía de ejercicios está hecha y probada en esta rama (`claude/zen-ritchie-ssnxwl`), pero **no está publicada**. Quedó armada sobre la versión anterior de la app (sin cuentas) y no se pasó a la versión con cuentas y grupos que está en `main`.
+- Qué trae: pestaña Guías con 46 ejercicios, ficha completa con fotos en dos posiciones, selector de versión o máquina y atajo **?** durante el entrenamiento, con el descanso visible.
+- Qué hay que pasar a `main`: la carpeta `gym-app/guides/` (textos en `guides.json` y fotos en `img/`), las funciones de guías y la pestaña nueva de `index.html`, y la entrada `guides/guides.json` del service worker (`sw.js`).
+- Al pasarla hay que revisar que encaje con las pestañas y los grupos de la versión nueva y volver a probarla.
+- Las fotos vienen de Free Exercise DB (dominio público declarado, sin verificar el origen de cada foto).
+- Hasta entonces no se toca ni se borra esta rama.
+
+### Arreglos incluidos en esta rama
+- Los campos de texto ya no se salen de su tarjeta y los filtros no se aplastan en listas largas.
 
 ### 2026-10-09
 - Sin datos personales en el código: se sacaron rutinas, nombres y planillas de ejemplo.
